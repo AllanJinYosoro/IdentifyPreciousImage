@@ -6,6 +6,7 @@ import random
 import shutil
 import time
 from collections import OrderedDict
+from sklearn.metrics import *
 
 import numpy as np
 import torch
@@ -18,7 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from dataset.cifar import get_local_data
-from utils import AverageMeter, accuracy
+from utils import AverageMeter, accuracy,pre_rec
 
 
 logger = logging.getLogger(__name__)
@@ -147,10 +148,7 @@ def main():
         return model
 
     if args.local_rank == -1:
-        if torch.cuda.is_available():
-            device = torch.device('cuda', args.gpu_id)
-        else:
-            device = torch.device("cpu")
+        device = torch.device('cuda', args.gpu_id)
         args.world_size = 1
         args.n_gpu = torch.cuda.device_count()
     else:
@@ -491,29 +489,34 @@ def test(args, test_loader, model, epoch):
             inputs = inputs.to(args.device)
             targets = targets.to(args.device)
             outputs = model(inputs)
+            if epoch == 0: pass#print(outputs,'traget next',targets)
             loss = F.cross_entropy(outputs, targets)
 
-            prec1, prec5 = accuracy(outputs, targets, topk=(1, 5))
+
+            prec1, prec5 = accuracy(outputs, targets, topk=(1, 2))
+            precision,recall = pre_rec(outputs,targets)
             losses.update(loss.item(), inputs.shape[0])
             top1.update(prec1.item(), inputs.shape[0])
-            top5.update(prec5.item(), inputs.shape[0])
+            #top5.update(prec5.item(), inputs.shape[0])
             batch_time.update(time.time() - end)
             end = time.time()
             if not args.no_progress:
-                test_loader.set_description("Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. ".format(
+                test_loader.set_description("Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. acc: {top1:.2f}. precision:{precision:.2f}. recall:{recall:.2f}".format(
                     batch=batch_idx + 1,
                     iter=len(test_loader),
                     data=data_time.avg,
                     bt=batch_time.avg,
                     loss=losses.avg,
                     top1=top1.avg,
-                    top5=top5.avg,
+                    precision=precision,
+                    recall = recall
                 ))
         if not args.no_progress:
             test_loader.close()
 
     logger.info("top-1 acc: {:.2f}".format(top1.avg))
-    logger.info("top-5 acc: {:.2f}".format(top5.avg))
+    logger.info("precision: {:.2f}".format(precision))
+    logger.info("recall: {:.2f}".format(recall))
     return losses.avg, top1.avg
 
 

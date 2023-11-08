@@ -7,7 +7,7 @@ import torch
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['get_mean_and_std', 'accuracy', 'AverageMeter']
+__all__ = ['get_mean_and_std', 'accuracy', 'AverageMeter','pre_rec']
 
 
 def get_mean_and_std(dataset):
@@ -42,6 +42,23 @@ def accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
+def pre_rec(output,target):
+    """Computes precision for binary classification"""
+    # convert output probabilities to predicted class (0 or 1)
+    pred = torch.argmax(output,dim=1)
+    #print(f'This is pred:{pred}')
+    
+    # True Positive (TP): we predict a label of 1 (positive), and the true label is 1.
+    TP = ((1-pred) * (1-target)).sum().to(torch.float32)
+    
+    # False Positive (FP): we predict a label of 1 (positive), but the true label is 0.
+    FP = (target * (1-pred)).sum().to(torch.float32)
+
+    FN = (pred * (1-target)).sum().to(torch.float32)
+    
+    precision = TP / (TP + FP + 1e-8)
+    recall = TP/ (TP+FN+1e-8)
+    return precision,recall
 
 class AverageMeter(object):
     """Computes and stores the average and current value

@@ -12,7 +12,7 @@ test in ./data/test
 
 ### suggested command line
 ```
-# python Mytrain.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 1024  --arch wideresnet --batch-size 64 --lr 0.03 --expand-labels --seed 5 --out results/Mytest
+# python Mytrain.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 10  --arch wideresnet  --lr 0.03 --expand-labels --seed 5 --out results/local_test
 ```
 ### Requirements
 - python 3.6+
