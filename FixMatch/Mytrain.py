@@ -476,6 +476,8 @@ def test(args, test_loader, model, epoch):
     top1 = AverageMeter()
     top5 = AverageMeter()
     end = time.time()
+    final_output = [] #存储最后一个epoch输出的torch.tensor
+    final_epoch = args.total_steps//args.eval_step
 
     if not args.no_progress:
         test_loader = tqdm(test_loader,
@@ -489,7 +491,7 @@ def test(args, test_loader, model, epoch):
             inputs = inputs.to(args.device)
             targets = targets.to(args.device)
             outputs = model(inputs)
-            if epoch == 0: pass#print(outputs,'traget next',targets)
+            if epoch == final_epoch: final_output.append(outputs)
             loss = F.cross_entropy(outputs, targets)
 
 
@@ -517,6 +519,7 @@ def test(args, test_loader, model, epoch):
     logger.info("top-1 acc: {:.2f}".format(top1.avg))
     logger.info("precision: {:.2f}".format(precision))
     logger.info("recall: {:.2f}".format(recall))
+    if epoch == final_epoch:torch.save(final_output,os.path.join(os.path.join('./',args.out),'final_result.pt'))
     return losses.avg, top1.avg
 
 
