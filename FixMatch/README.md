@@ -13,6 +13,7 @@ test in ./data/test
 ### suggested command line
 ```
 # python Mytrain.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 1024 --total-steps 204800 --arch wideresnet  --lr 0.03 --expand-labels --seed 5  --out results/202311101435JXH 
+python Mypredict.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 1024 --total-steps 204800 --arch wideresnet  --lr 0.03 --expand-labels --seed 5  --out results/202311101435JXH --predict_model_path results\model_best.pth.tar --predict_data_path ./datae/test
 ```
 ### Requirements
 - python 3.6+

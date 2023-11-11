@@ -66,6 +66,22 @@ def de_interleave(x, size):
     s = list(x.shape)
     return x.reshape([size, -1] + s[1:]).transpose(0, 1).reshape([-1] + s[1:])
 
+def create_model(args):
+    if args.arch == 'wideresnet':
+        import models.wideresnet as models
+        model = models.build_wideresnet(depth=args.model_depth,
+                                        widen_factor=args.model_width,
+                                        dropout=0,
+                                        num_classes=args.num_classes)
+    elif args.arch == 'resnext':
+        import models.resnext as models
+        model = models.build_resnext(cardinality=args.model_cardinality,
+                                        depth=args.model_depth,
+                                        width=args.model_width,
+                                        num_classes=args.num_classes)
+    logger.info("Total params: {:.2f}M".format(
+        sum(p.numel() for p in model.parameters())/1e6))
+    return model
 
 def main():
     parser = argparse.ArgumentParser(description='PyTorch FixMatch Training')
@@ -129,23 +145,6 @@ def main():
 
     args = parser.parse_args()
     global best_acc
-
-    def create_model(args):
-        if args.arch == 'wideresnet':
-            import models.wideresnet as models
-            model = models.build_wideresnet(depth=args.model_depth,
-                                            widen_factor=args.model_width,
-                                            dropout=0,
-                                            num_classes=args.num_classes)
-        elif args.arch == 'resnext':
-            import models.resnext as models
-            model = models.build_resnext(cardinality=args.model_cardinality,
-                                         depth=args.model_depth,
-                                         width=args.model_width,
-                                         num_classes=args.num_classes)
-        logger.info("Total params: {:.2f}M".format(
-            sum(p.numel() for p in model.parameters())/1e6))
-        return model
 
     if args.local_rank == -1:
         device = torch.device('cuda', args.gpu_id)
