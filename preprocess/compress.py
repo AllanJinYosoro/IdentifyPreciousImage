@@ -37,22 +37,23 @@ def compress_image(input_path, output_path, target_size_kb=4, quality_step=1):
                 # 再次尝试保存图片
                 img.save(output_path, quality=quality, optimize=True)
 
-# 目标文件夹和输出文件夹路径
-input_folder = '1'
-output_folder = '2'
+if __name__ == '__main__':
+    # 目标文件夹和输出文件夹路径
+    input_folder = '1'
+    output_folder = '2'
 
-# 确保输出文件夹存在
-if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
+    # 确保输出文件夹存在
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
-# 遍历指定文件夹中的所有文件
-for filename in os.listdir(input_folder):
-    if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
-        # 图片完整路径
-        image_path = os.path.join(input_folder, filename)
-        
-        # 图片的输出路径
-        output_path = os.path.join(output_folder, filename)
-        
-        # 调用压缩函数
-        compress_image(image_path, output_path)
+    # 遍历指定文件夹中的所有文件
+    for filename in os.listdir(input_folder):
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+            # 图片完整路径
+            image_path = os.path.join(input_folder, filename)
+            
+            # 图片的输出路径
+            output_path = os.path.join(output_folder, filename)
+            
+            # 调用压缩函数
+            compress_image(image_path, output_path)
