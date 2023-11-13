@@ -1,9 +1,11 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget
 from PyQt6.QtGui import QPixmap, QIcon, QImage
 from PyQt6.QtCore import QSize
+from global_logger import global_logger
 from cluster import cluster_N_unique_image
 from image import *
-from config import get_image_paths
+from cluster_substitute import get_image_paths
+from error_handler import show_error_dialog
 import os
 
 # 创建一个自定义的主窗口类
@@ -16,6 +18,8 @@ class MyMainWindow(QMainWindow):
         #设置窗口大小
         self.resize(1440,810)
 
+picture_chosen = []
+
 #创建一个对话框类
 class CustomMessageBox(QDialog):
     def __init__(self,folder,picnum,parent=None):
@@ -24,8 +28,7 @@ class CustomMessageBox(QDialog):
         # 设置对话框的大小
         self.setMinimumSize(570, 710) 
         self.folder = folder
-        self.picture_chosen = []
-        self.picture = get_image_paths(self.folder)
+        self.picture = get_image_paths(self.folder) #待更换
         # 设置背景图片
         #self.setStyleSheet("background-image: url('UI/assets/images/SelectWindow.svg');")
         self.layout = QGridLayout(self)
@@ -67,24 +70,26 @@ class CustomMessageBox(QDialog):
         self.layout.addWidget(self.next_button,3,1)
 
         self.dialog_counter = 1
-
+        
     def button_click(self):
         button = self.sender()  # 获取发送信号的按钮
         
         image_path = button.property("image_path")  # 获取图片地址属性
-        print(image_path)
-        self.picture_chosen.append(image_path)
-        
+        picture_chosen.append(image_path)
 
     def show_next_dialog(self):
         self.close()
-        if self.dialog_counter < 5:
-            next_dialog = CustomMessageBox(self.folder,self.dialog_counter)
-            next_dialog.dialog_counter = self.dialog_counter + 1
-            next_dialog.exec()
+        if self.dialog_counter < 5: #待增加调参
+            try:
+                next_dialog = CustomMessageBox(self.folder,self.dialog_counter)
+                next_dialog.dialog_counter = self.dialog_counter + 1
+                next_dialog.exec()
+            except Exception as e:
+                show_error_dialog(str(e))
+
         else:
-            print([self.picture_chosen,self.picture])
-            self.close()
+            global_logger.info(set(picture_chosen)) #待调整输出方式
+            picture_chosen.clear()
 
 # 创建应用程序对象
 app = QApplication([])
@@ -137,7 +142,6 @@ scroll_area.setMaximumSize(1300, 690)
 
 scroll_area.setStyleSheet("background-color: transparent;")
 
-
 # 创建网格布局
 grid_layout = QGridLayout(container)
 
@@ -163,7 +167,7 @@ def select_folder():
     global folder_path
 
     folder_path = QFileDialog.getExistingDirectory(window, "选择文件夹")
-
+    global_logger.info(folder_path)
     if folder_path:
         # 清空之前的图片
         clear_images()
@@ -185,7 +189,6 @@ def show_images():
     # 缩放图片的目标大小
     target_size = (220, 150)
 
-    print(folder_path)
     # 将图片添加到网格布局中
     for i, image_path in enumerate(image_paths):
         # 加载原始图片
@@ -207,18 +210,16 @@ select_folder_button.clicked.connect(select_folder)
 select_folder_button.move(1060,60)
 scroll_area.move(80,120)
 
-
 # 定义按钮点击事件的槽函数
 def button_clicked():
-    # 创建自定义消息框窗口
-    msg_box = CustomMessageBox(folder_path,0)
+    try:
+        # 创建自定义消息框窗口
+        msg_box = CustomMessageBox(folder_path,0)
     
-    # 显示消息框并等待用户响应
-    clicked_button = msg_box.exec()
-    
-    # 根据用户响应进行相应操作
-    if clicked_button == QDialog.DialogCode.Accepted:
-        print("用户点击了确定按钮")
+        # 显示消息框并等待用户响应
+        clicked_button = msg_box.exec()
+    except Exception as e:
+        show_error_dialog(str(e))
 
 # 将按钮的点击信号连接到槽函数
 button.clicked.connect(button_clicked)
