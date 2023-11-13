@@ -1,6 +1,9 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QVBoxLayout, QFileDialog, QScrollArea, QGridLayout, QWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget
 from PyQt6.QtGui import QPixmap, QIcon, QImage
+from PyQt6.QtCore import QSize
 from cluster import cluster_N_unique_image
+from image import *
+from config import get_image_paths
 import os
 
 # 创建一个自定义的主窗口类
@@ -8,28 +11,58 @@ class MyMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        #设置标题
+        self.setWindowTitle('jxh')
+        #设置窗口大小
+        self.resize(1440,810)
+
+#创建一个对话框类
 class CustomMessageBox(QDialog):
     def __init__(self,folder,picnum,parent=None):
         super().__init__(parent)
         
+        # 设置对话框的大小
+        self.setMinimumSize(570, 710) 
+        self.folder = folder
         self.picture_chosen = []
-        self.picture = cluster_N_unique_image(folder)
+        self.picture = get_image_paths(self.folder)
         # 设置背景图片
-        self.setStyleSheet("background-image: url('UI/assets/images/SelectWindow.svg');")
+        #self.setStyleSheet("background-image: url('UI/assets/images/SelectWindow.svg');")
         self.layout = QGridLayout(self)
 
         # 添加按钮
         self.next_button = QPushButton('下一步')
         self.next_button.clicked.connect(self.show_next_dialog)
 
-        self.icons = [self.picture[9*picnum:9+9*picnum]]
+        self.icons = self.picture[9*picnum:9+9*picnum]
 
         for row in range(3):
             for col in range(3):
                 button = QPushButton()
                 icon = QIcon(self.icons[row * 3 + col])
                 button.setIcon(icon)
+                button.setIconSize(QSize(180,180))
+                button.setFixedSize(180,180)
+                button.setStyleSheet('''
+                QPushButton {
+                    color: white;
+                    border-style: outset;
+                    border-width: 2px;
+                    border-radius: 10px;
+                    border-color: beige;
+                    font: bold 14px;
+                    }
+                QPushButton:pressed {
+                    background-color: rgb(100, 100, 100);
+                    border-style: inset;
+                    }
+                QPushButton:disabled {
+                    background-color: gray;
+                    color: lightgray;
+                    border-style: outset;
+                    }''')
                 button.setProperty("image_path", self.icons[row * 3 + col])
+                button.clicked.connect(self.button_click)
                 self.layout.addWidget(button, row, col)
         self.layout.addWidget(self.next_button,3,1)
 
@@ -37,21 +70,20 @@ class CustomMessageBox(QDialog):
 
     def button_click(self):
         button = self.sender()  # 获取发送信号的按钮
+        
         image_path = button.property("image_path")  # 获取图片地址属性
         print(image_path)
         self.picture_chosen.append(image_path)
         
-        # 设置对话框的大小
-        self.setMinimumSize(570, 710) 
 
     def show_next_dialog(self):
         self.close()
-        if self.dialog_counter < 9:
-            next_dialog = CustomMessageBox(folder_path,self.dialog_counter)
+        if self.dialog_counter < 5:
+            next_dialog = CustomMessageBox(self.folder,self.dialog_counter)
             next_dialog.dialog_counter = self.dialog_counter + 1
             next_dialog.exec()
         else:
-            print(self.picture_chosen,self.picture)
+            print([self.picture_chosen,self.picture])
             self.close()
 
 # 创建应用程序对象
@@ -60,18 +92,12 @@ app = QApplication([])
 # 创建窗口实例
 window = MyMainWindow()
 
-# 设置窗口标题
-window.setWindowTitle("jxh")
-
-# 设置窗口大小
-window.resize(1440, 810)
-
 # 设置应用程序图标
-icon = QIcon("UI/assets/images/photos.png")  # 将路径替换为实际的图标文件路径
+icon = QIcon("UI/assets/images/photos.png")
 app.setWindowIcon(icon)
 
 # 加载背景图片
-background_image = QPixmap("UI/assets/images/background.png")  # 将 "path/to/image.jpg" 替换为你的图片路径
+background_image = QPixmap("UI/assets/images/background.png")
 
 # 创建一个 QLabel，用于显示背景图片
 background_label = QLabel(window)
@@ -130,7 +156,6 @@ select_folder_button.setStyleSheet("""
     }
 """)
 
-
 # 定义文件夹路径变量
 folder_path = ""
 
@@ -138,6 +163,7 @@ def select_folder():
     global folder_path
 
     folder_path = QFileDialog.getExistingDirectory(window, "选择文件夹")
+
     if folder_path:
         # 清空之前的图片
         clear_images()
@@ -159,6 +185,7 @@ def show_images():
     # 缩放图片的目标大小
     target_size = (220, 150)
 
+    print(folder_path)
     # 将图片添加到网格布局中
     for i, image_path in enumerate(image_paths):
         # 加载原始图片
@@ -195,8 +222,6 @@ def button_clicked():
 
 # 将按钮的点击信号连接到槽函数
 button.clicked.connect(button_clicked)
-
-
 
 # 显示窗口
 window.show()

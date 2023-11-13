@@ -1,38 +1,15 @@
-import sys
-from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QVBoxLayout
+import os
 
-class CustomDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+def get_image_paths(folder_path):
+    image_paths = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            if file.endswith(('.JPG', '.jpeg', '.png', '.gif')):
+                image_path = os.path.join(root, file)
+                image_paths.append(image_path)
+    return image_paths
 
-        self.setWindowTitle('自定义对话框')
-        self.layout = QVBoxLayout(self)
+folder_path = 'Photos/LPL'  # 替换为实际的文件夹路径
+image_paths = get_image_paths(folder_path)
 
-        self.next_button = QPushButton('下一步')
-        self.next_button.clicked.connect(self.show_next_dialog)
-
-        self.finish_button = QPushButton('完成')
-        self.finish_button.clicked.connect(self.close_dialog)
-
-        self.layout.addWidget(self.next_button)
-        self.layout.addWidget(self.finish_button)
-
-        self.dialog_counter = 1
-
-    def show_next_dialog(self):
-        self.close()
-        if self.dialog_counter < 9:
-            next_dialog = CustomDialog()
-            next_dialog.dialog_counter = self.dialog_counter + 1
-            next_dialog.exec()
-        else:
-            self.close()
-
-    def close_dialog(self):
-        self.close()
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    dialog = CustomDialog()
-    dialog.exec()
-    sys.exit(app.exec())
+print(image_paths)

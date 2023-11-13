@@ -1,4 +1,3 @@
-#! pip install clustimage
 from clustimage import Clustimage
 
 def cluster_N_unique_image(folder,clustNum = 45):
