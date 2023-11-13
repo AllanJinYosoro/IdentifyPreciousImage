@@ -29,5 +29,6 @@ def convert_format(directory_path):
                 
                 index += 1  # Increment the index only after successful processing
         except UnidentifiedImageError:
-            print(f"Cannot process image: {image_file}. Skipping.")
+            print(f"Cannot process image: {image_file}. deleting.")
+            os.remove(os.path.join(directory_path, image_file))
     print('Conversion Complete!')
