@@ -5,7 +5,7 @@ from pathlib import Path
 
 def CreateAndRemove(pending_label_images,ulb_num,test_num):
     # 定义rawdata目录
-    rawdata_dir = Path.cwd() / 'rawdata'
+    rawdata_dir = './ClusterImage/rawdata'
 
     # 待处理的图片列表
     pending_label_images = pending_label_images  # 这里填入你的图片路径列表

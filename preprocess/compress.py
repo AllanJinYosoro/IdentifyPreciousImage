@@ -37,10 +37,7 @@ def compress_image(input_path, output_path, target_size_kb=4, quality_step=1):
                 # 再次尝试保存图片
                 img.save(output_path, quality=quality, optimize=True)
 
-if __name__ == '__main__':
-    # 目标文件夹和输出文件夹路径
-    input_folder = '1'
-    output_folder = '2'
+def compress_images(input_folder,output_folder, target_size_kb=4, quality_step=1):
 
     # 确保输出文件夹存在
     if not os.path.exists(output_folder):
