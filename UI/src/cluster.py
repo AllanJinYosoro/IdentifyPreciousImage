@@ -27,5 +27,4 @@ def cluster_N_unique_image(folder,clustNum = 45):
     # return 'pathnames' from uniqueImage and transform to list
     uniqueImage_path = uniqueImage['pathnames']
 
-
     return uniqueImage_path
