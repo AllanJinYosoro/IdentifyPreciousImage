@@ -1,11 +1,13 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget, QMessageBox
 from PyQt6.QtGui import QPixmap, QIcon, QImage
 from PyQt6.QtCore import QSize, Qt, QRunnable, QThreadPool
+
 from global_logger import global_logger
-import threading
-from cluster import cluster_N_unique_image
+from create_and_remove import create_and_remove, add_replication_suffix, get_all_file_paths
 from image import * 
 from error_handler import show_error_dialog
+
+import threading
 import os
 
 # 创建一个自定义的主窗口类
@@ -18,9 +20,8 @@ class MyMainWindow(QMainWindow):
         #设置窗口大小
         self.resize(1440,810)
 
-picture_chosen = []
-cluster_pictures = []
 
+picture_chosen = []
 
 #创建一个对话框类
 class CustomMessageBox(QDialog):
@@ -45,7 +46,7 @@ class CustomMessageBox(QDialog):
                 button = QPushButton()
                 icon = QIcon(self.icons[row * 3 + col])
                 button.setIcon(icon)
-                button.setIconSize(QSize(180,180))
+                button.setIconSize(QSize(175,175))
                 button.setFixedSize(180,180)
                 button.setStyleSheet('''
                 QPushButton {
@@ -80,6 +81,7 @@ class CustomMessageBox(QDialog):
 
     def show_next_dialog(self):
         self.close()
+        global picture_chosen 
         if self.dialog_counter < 5: #待增加调参
             try:
                 next_dialog = CustomMessageBox(self.pictures,self.dialog_counter)
@@ -89,7 +91,10 @@ class CustomMessageBox(QDialog):
                 show_error_dialog(str(e))
 
         else:
-            global_logger.info(set(picture_chosen)) #待调整输出方式
+            picture_chosen = list(set(picture_chosen))
+            picture_not_chosen = [element for element in self.pictures if element not in picture_chosen]
+            add_replication_suffix('UI/data/compdata/lb',picture_chosen,'_0')
+            add_replication_suffix('UI/data/compdata/lb',picture_not_chosen,'_1')
             picture_chosen.clear()
 
 # 创建应用程序对象
@@ -217,9 +222,13 @@ scroll_area.move(80,120)
 # 后台任务函数
 def background_task(folder):
     # 后台运行的函数逻辑
-    global cluster_pictures
-    cluster_pictures = cluster_N_unique_image(folder)
-    QMessageBox.information(window,"完成", "聚类完成")
+    global manage_btn_lock
+    manage_btn_lock = True
+    create_and_remove(folder,500,50)
+    manage_btn_lock = False
+    #cluster_pictures = cluster_N_unique_image(folder)
+    QMessageBox.information(window,"完成", "标记完成")
+
 
 def start_background_task(folder):
         # 创建后台线程
@@ -227,12 +236,11 @@ def start_background_task(folder):
         # 启动后台线程
         thread.start()
 
-
 # 定义按钮点击事件的槽函数
 def button_clicked():
     try:
         # 创建自定义消息框窗口
-        msg_box = CustomMessageBox(cluster_pictures,0)
+        msg_box = CustomMessageBox(get_all_file_paths('UI/data/rawdata/lb'),0)
     
         # 显示消息框并等待用户响应
         clicked_button = msg_box.exec()
