@@ -381,7 +381,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
             del logits
 
             Lx = F.cross_entropy(logits_x, targets_x.long(), reduction='mean')
-
+            #伪标签生成过程不需要迭代，detach以冻结其梯度
             pseudo_label = torch.softmax(logits_u_w.detach()/args.T, dim=-1)
             max_probs, targets_u = torch.max(pseudo_label, dim=-1)
             mask = max_probs.ge(args.threshold).float()
