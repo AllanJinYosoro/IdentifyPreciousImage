@@ -55,15 +55,18 @@ def create_and_remove(src_folder,cluster_num,ulb_num,test_num):
 
     # 创建子目录
     lb_dir = target_dir / 'lb'
-    shutil.rmtree(lb_dir)
+    if os.path.exists(lb_dir):
+        shutil.rmtree(lb_dir)
     if not os.path.exists(lb_dir):lb_dir.mkdir(exist_ok=True)
 
     ulb_dir = target_dir / 'ulb'
-    shutil.rmtree(ulb_dir)
+    if os.path.exists(ulb_dir):
+        shutil.rmtree(ulb_dir)
     if not os.path.exists(ulb_dir):ulb_dir.mkdir(exist_ok=True)
 
     test_dir = target_dir / 'test'
-    shutil.rmtree(test_dir)
+    if os.path.exists(test_dir):
+        shutil.rmtree(test_dir)
     if not os.path.exists(test_dir):test_dir.mkdir(exist_ok=True)
 
     # 移动聚类结果到lb子目录
