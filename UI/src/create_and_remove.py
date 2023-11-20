@@ -55,6 +55,14 @@ def create_and_remove(src_folder,ulb_num,test_num):
     for img_path in cluster_result:
         img = Path(img_path)
         shutil.copy(str(img), str(lb_dir))
+    
+    #获取lb子目录下的图片数量
+    lb_num = len(list(lb_dir.glob("*.[jp][np][g]*")))
+    if lb_num < 45:
+        print('lb图片数量不足')
+        #复制lb子目录下的图片，直到数量达到45
+        for img in random.sample(list(lb_dir.glob("*.[jp][np][g]*")), 45-lb_num):
+            shutil.copy(str(img), str(lb_dir))
 
     # 获取src_folder目录下的所有图片文件
     all_images = list(src_folder.glob("*.[jp][np][g]*"))  # 匹配.jpg, .jpeg, .png, .gif等图片文件
@@ -75,6 +83,8 @@ def create_and_remove(src_folder,ulb_num,test_num):
     compress_images('UI/data/rawdata/lb','UI/data/compdata/lb')
     compress_images('UI/data/rawdata/ulb','UI/data/compdata/ulb')
     compress_images('UI/data/rawdata/test','UI/data/compdata/test')
+
+    print('completed')
 
 def add_replication_suffix(target_folder,file_list, suffix):
     for file_path in file_list:
