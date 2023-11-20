@@ -5,6 +5,16 @@ from pathlib import Path
 from cluster import cluster_N_unique_image
 from compress import compress_images
 
+def generate_file_list(folder_path, path_list):
+    folder_path = Path(folder_path)
+    file_list = []
+    
+    for path in path_list:
+        file_path = folder_path / Path(path).name
+        file_list.append(str(file_path))
+    
+    return file_list
+
 def get_all_file_paths(folder_path):
     file_paths = []
     for filename in os.listdir(folder_path):
@@ -29,32 +39,48 @@ def rename_images(folder_path, new_filename_prefix):
             # 重命名文件
             os.rename(original_file, new_file)
 
-def create_and_remove(src_folder,ulb_num,test_num):
+def create_and_remove(src_folder,cluster_num,ulb_num,test_num):
     # 定义target_dir目录
     target_dir = Path('UI/data/rawdata')
+    compress_images(src_folder,'UI/data/compdata/all')
 
-    cluster_result = cluster_N_unique_image(src_folder)# 聚类图片列表
-    print(len(cluster_result))
-    
+    cluster_result = cluster_N_unique_image('UI/data/compdata/all',cluster_num)# 聚类图片列表
+
+    cluster_result = generate_file_list(src_folder,cluster_result)
+
+    #删除'UI/data/compdata/all'
+    shutil.rmtree('UI/data/compdata/all')
+
     src_folder = Path(src_folder) 
 
     # 创建子目录
     lb_dir = target_dir / 'lb'
-    shutil.rmtree(lb_dir)
+    if os.path.exists(lb_dir):
+        shutil.rmtree(lb_dir)
     if not os.path.exists(lb_dir):lb_dir.mkdir(exist_ok=True)
 
     ulb_dir = target_dir / 'ulb'
-    shutil.rmtree(ulb_dir)
+    if os.path.exists(ulb_dir):
+        shutil.rmtree(ulb_dir)
     if not os.path.exists(ulb_dir):ulb_dir.mkdir(exist_ok=True)
 
     test_dir = target_dir / 'test'
-    shutil.rmtree(test_dir)
+    if os.path.exists(test_dir):
+        shutil.rmtree(test_dir)
     if not os.path.exists(test_dir):test_dir.mkdir(exist_ok=True)
 
     # 移动聚类结果到lb子目录
     for img_path in cluster_result:
         img = Path(img_path)
         shutil.copy(str(img), str(lb_dir))
+    
+    #获取lb子目录下的图片数量
+    lb_num = len(list(lb_dir.glob("*.[jp][np][g]*")))
+    if lb_num < cluster_num:
+        print('lb图片数量不足')
+        #复制lb子目录下的图片，直到数量达到45
+        for img in random.sample(list(lb_dir.glob("*.[jp][np][g]*")), cluster_num-lb_num):
+            shutil.copy(str(img), str(lb_dir/ f'new_{img.name}'))
 
     # 获取src_folder目录下的所有图片文件
     all_images = list(src_folder.glob("*.[jp][np][g]*"))  # 匹配.jpg, .jpeg, .png, .gif等图片文件
@@ -75,6 +101,8 @@ def create_and_remove(src_folder,ulb_num,test_num):
     compress_images('UI/data/rawdata/lb','UI/data/compdata/lb')
     compress_images('UI/data/rawdata/ulb','UI/data/compdata/ulb')
     compress_images('UI/data/rawdata/test','UI/data/compdata/test')
+
+    print('completed')
 
 def add_replication_suffix(target_folder,file_list, suffix):
     for file_path in file_list:

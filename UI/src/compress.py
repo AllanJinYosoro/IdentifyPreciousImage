@@ -41,7 +41,8 @@ def compress_image(input_path, output_path, target_size_kb, quality_step):
 def compress_images(input_folder,output_folder, target_size_kb=4, quality_step=1):
 
     # 确保输出文件夹存在
-    shutil.rmtree(output_folder)
+    if os.path.exists(output_folder):
+        shutil.rmtree(output_folder)
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 

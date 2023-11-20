@@ -1,5 +1,3 @@
-beta v0.4 
+beta v0.6
 update：
-选中效果
-日志输出选中的图片路径
-聚类功能整合
+增加了setting
