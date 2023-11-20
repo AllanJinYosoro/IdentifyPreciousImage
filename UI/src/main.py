@@ -1,6 +1,7 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget, QVBoxLayout, QLineEdit
+
 from PyQt6.QtGui import QPixmap, QIcon, QImage
-from PyQt6.QtCore import QSize, Qt, QRunnable, QThreadPool
+from PyQt6.QtCore import QSize
 
 from global_logger import global_logger
 from create_and_remove import create_and_remove, add_replication_suffix, get_all_file_paths
@@ -10,18 +11,48 @@ from error_handler import show_error_dialog
 import threading
 import os
 
+class DialogueWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("setting")
+
+        # 创建一个布局
+        layout = QVBoxLayout(self)
+
+        # 创建第一个输入框标签和输入框
+        label1 = QLabel("label组数(9个一组):")
+        layout.addWidget(label1)
+
+        self.input_field1 = QLineEdit()
+        layout.addWidget(self.input_field1)
+
+        # 创建第二个输入框标签和输入框
+        label2 = QLabel("test组数(9个一组):")
+        layout.addWidget(label2)
+
+        self.input_field2 = QLineEdit()
+        layout.addWidget(self.input_field2)
+
+        self.button = QPushButton("提交")
+        layout.addWidget(self.button)
+
+        # 连接按钮的点击事件到槽函数
+        self.button.clicked.connect(self.accept)
+
 #创建一个对话框类
 class CustomMessageBox(QDialog):
-    def __init__(self,pictures,picnum,picture_chosen,parent=None):
+    def __init__(self,pictures,target_folder,picnum,picture_chosen,parent=None):
         super().__init__(parent)
         
         # 设置对话框的大小
         self.setMinimumSize(570, 710) 
         self.pictures = pictures
         self.picture_chosen = picture_chosen
+        self.target_folder = target_folder
+        self.group_num = (len(pictures)//9)
 
         # 设置背景图片
-        #self.setStyleSheet("background-image: url('UI/assets/images/SelectWindow.svg');")
         self.layout = QGridLayout(self)
 
         # 添加按钮
@@ -71,9 +102,9 @@ class CustomMessageBox(QDialog):
     def show_next_dialog(self):
         self.close()
 
-        if self.dialog_counter < 5: #待增加调参
+        if self.dialog_counter < self.group_num: 
             try:
-                next_dialog = CustomMessageBox(self.pictures,self.dialog_counter,self.picture_chosen)
+                next_dialog = CustomMessageBox(self.pictures,self.target_folder,self.dialog_counter,self.picture_chosen)
                 next_dialog.dialog_counter = self.dialog_counter + 1
                 next_dialog.exec()
             except Exception as e:
@@ -82,8 +113,8 @@ class CustomMessageBox(QDialog):
         else:
             self.picture_chosen = list(set(self.picture_chosen))
             self.picture_not_chosen = [element for element in self.pictures if element not in self.picture_chosen]
-            add_replication_suffix('UI/data/compdata/lb',self.picture_chosen,'_0')
-            add_replication_suffix('UI/data/compdata/lb',self.picture_not_chosen,'_1')
+            add_replication_suffix(self.target_folder,self.picture_chosen,'_0')
+            add_replication_suffix(self.target_folder,self.picture_not_chosen,'_1')
             self.picture_chosen.clear()
 
 # 创建一个自定义的主窗口类
@@ -105,7 +136,7 @@ class MyMainWindow(QMainWindow):
         self.background_label.setPixmap(self.background_image)
         self.background_label.setGeometry(0, 0, self.width(), self.height())  # 设置标签大小与窗口大小一致
 
-        # 创建按钮
+        # manage按钮
         self.manage_btn = QPushButton(self)
         self.manage_btn.setFixedSize(60, 60)
 
@@ -113,7 +144,7 @@ class MyMainWindow(QMainWindow):
         self.manage_btn.setStyleSheet("""
             QPushButton {
                 border: none;
-                background-image: url(UI/assets/images/Vector.svg);
+                background-image: url(UI/assets/images/manage.svg);
                 background-repeat: no-repeat;
                 background-position: center;
                 padding: 0;
@@ -126,6 +157,45 @@ class MyMainWindow(QMainWindow):
         # 将按钮的点击信号连接到槽函数
         self.manage_btn.clicked.connect(self.manage_btn_clicked)
 
+        # test按钮
+        self.test_btn = QPushButton(self)
+        self.test_btn.setFixedSize(60, 60)
+
+        # 设置按钮的样式表
+        self.test_btn.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background-image: url(UI/assets/images/test.svg);
+                background-repeat: no-repeat;
+                background-position: center;
+                padding: 0;
+            }
+        """)
+
+        self.test_btn.move(4, 120)
+
+        # 将按钮的点击信号连接到槽函数
+        self.test_btn.clicked.connect(self.test_btn_clicked)
+
+                # test按钮
+        self.setting_btn = QPushButton(self)
+        self.setting_btn.setFixedSize(60, 60)
+
+        # 设置按钮的样式表
+        self.setting_btn.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background-image: url(UI/assets/images/setting.svg);
+                background-repeat: no-repeat;
+                background-position: center;
+                padding: 0;
+            }
+        """)
+
+        self.setting_btn.move(4, 192)
+
+        # 将按钮的点击信号连接到槽函数
+        self.setting_btn.clicked.connect(self.setting_btn_clicked)
 
         # 创建滚动框
         self.scroll_area = QScrollArea(self)
@@ -170,6 +240,9 @@ class MyMainWindow(QMainWindow):
         self.folder_path = ""
         self.picture_chosen = []
         self.manage_btn_available = False
+        self.lb_num = 45
+        self.test_num = 198
+        self.ulb_num = 500
 
     def select_folder(self):
         self.folder_path = QFileDialog.getExistingDirectory(None, "选择文件夹", "/")
@@ -219,10 +292,9 @@ class MyMainWindow(QMainWindow):
     def background_task(self,folder):
         # 后台运行的函数逻辑
         self.manage_btn_available = False
-        create_and_remove(folder,500,50)
+        create_and_remove(folder,self.lb_num,self.ulb_num,self.test_num)
         self.manage_btn_available = True
-        #QMessageBox.information(self,"完成", "归档完成")
-
+        
 
     def start_background_task(self,folder):
             # 创建后台线程
@@ -235,7 +307,7 @@ class MyMainWindow(QMainWindow):
         if self.manage_btn_available:    
             try:
                 # 创建自定义消息框窗口
-                msg_box = CustomMessageBox(get_all_file_paths('UI/data/rawdata/lb'),0,[])
+                msg_box = CustomMessageBox(get_all_file_paths('UI/data/rawdata/lb'),'UI/data/compdata/lb',0,[])
             
                 # 显示消息框并等待用户响应
                 msg_box.exec()
@@ -243,6 +315,28 @@ class MyMainWindow(QMainWindow):
                 show_error_dialog(str(e))
         else:
             show_error_dialog('正在归档，请稍后再试')
+
+    def test_btn_clicked(self):
+        if self.manage_btn_available:    
+            try:
+                # 创建自定义消息框窗口
+                msg_box = CustomMessageBox(get_all_file_paths('UI/data/rawdata/test'),'UI/data/compdata/test',0,[])
+            
+                # 显示消息框并等待用户响应
+                msg_box.exec()
+            except Exception as e:
+                show_error_dialog(str(e))
+        else:
+            show_error_dialog('正在归档，请稍后再试')
+
+    def setting_btn_clicked(self):
+        dialogue_window = DialogueWindow(self)
+        if dialogue_window.exec() == QDialog.DialogCode.Accepted:
+            input_text1 = dialogue_window.input_field1.text()
+            input_text2 = dialogue_window.input_field2.text()
+            self.lb_num = int(input_text1)*9
+            self.test_num = int(input_text2)*9
+        
 
 def main():
     # 创建应用程序对象
