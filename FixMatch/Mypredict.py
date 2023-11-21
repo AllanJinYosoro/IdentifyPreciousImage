@@ -6,7 +6,9 @@ import random
 import shutil
 import time
 from collections import OrderedDict
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score,roc_auc_score, roc_curve,confusion_matrix,f1_score
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 import numpy as np
 import torch
@@ -95,6 +97,104 @@ def predict(args, model_checkpoint_path, test_loader):
             
     return np.concatenate(all_outputs, axis=0), np.concatenate(all_labels, axis=0)
 
+def plot_roc(predict, true):
+    # 计算各项指标
+    roc_auc = roc_auc_score(true, predict)
+    # 计算ROC曲线
+    fpr, tpr, _ = roc_curve(true, predict)
+    # 可视化ROC曲线
+    plt.figure()
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.03])
+    plt.ylim([0.0, 1.03])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic Curve')
+    plt.legend(loc="lower right")
+    plt.show()
+
+    return 0
+
+def plot_ConfusionMatrix(true,predict):
+    # 计算各个指标
+    accuracy = accuracy_score(true, predict)
+    precision = precision_score(true, predict)
+    recall = recall_score(true, predict)
+    f1 = f1_score(true, predict)
+    # 计算混淆矩阵
+    cm = confusion_matrix(true, predict)
+    # 提取TP, TN, FP, FN
+    tn, fp, fn, tp = cm.ravel()
+
+    # define the colors: green red blue yellow
+    color_grbyo = dict(
+        g='rgb(183, 215, 168)',r='rgb(235, 153, 153)',b='rgb(162, 196, 201)',
+        y='rgb(255, 229, 154)',o='rgb(239, 127, 89)',w='white'
+        )
+
+    fig = go.Figure(data=[go.Table(
+        # 列宽
+        columnwidth=[30,10,40,40,30,40],
+        # 首行
+        header=dict(
+            # 内容
+            values=['','','Actual','','',f'F1 score = {f1:.2f}'],
+            # 边框颜色
+            line_color='white',
+            # 填充颜色
+            fill_color=['white','white','white','white','white',color_grbyo['o']],
+            # 对齐: 左侧
+            align='left',
+            # 字体颜色
+            font=dict(color=['black','black','black','black','black',color_grbyo['w']],size=12),
+            # 行高
+            height=30
+        ),
+        # 后续行
+        cells=dict(
+            # 内容
+            values=list(zip(
+                ['','','+','-','',''],
+                ['Prediction','+',f'True Positive = {tp}',f'False Positive = {fp}','All Predicted Positive = {}'.format(tp+fp),f'Precision = {precision:.2f}%'],
+                ['','-',f'False Negative = {fn}',f'True Negative = {tn}',f'All Predicted Negative = {tn+fn}',''],
+                ['','','All Positive Instances = {}'.format(tp+fn),'All Negative Instances = {}'.format(tn+fp),'',''],
+                ['' for i in range(6)],
+                ['','',f'Recall = {recall:.2f}%','','',f'Accuracy = {accuracy:.2f}%'],
+            )),
+            # 边框颜色
+            line_color='white',
+            # 填充色
+            fill_color=list(zip(
+                ['white','white',color_grbyo['g'],color_grbyo['r'],'white','white'],
+                ['white',color_grbyo['g'],color_grbyo['g'],color_grbyo['b'],'white',color_grbyo['o']],
+                ['white',color_grbyo['r'],color_grbyo['y'],color_grbyo['r'],'white','white'],
+                ['white','white','white','white','white','white'],
+                ['white','white','white','white','white','white'],
+                ['white','white',color_grbyo['o'],'white','white',color_grbyo['o']]
+            )),
+            # 对齐: 左侧
+            align='left',
+            # 字体颜色
+            font=dict(
+                color=list(zip(
+                    ['black' for i in range(6)],
+                    ['black','black','black','black','black',color_grbyo['w']],
+                    ['black' for i in range(6)],
+                    ['black' for i in range(6)],
+                    ['black' for i in range(6)],
+                    ['black','black',color_grbyo['w'],'black','black',color_grbyo['w']],
+                )),
+                size=12),
+            # 行高
+            height=25
+        ))
+    ])
+
+    fig.show()
+    return 0
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch FixMatch Training')
     parser.add_argument('--gpu-id', default='0', type=int,
@@ -174,3 +274,6 @@ if __name__ == '__main__':
     recall = recall_score(real_labels, predict_labels, average='binary')
 
     print(acc,precision,recall)
+
+    plot_roc(predict_labels,real_labels)
+    plot_ConfusionMatrix(predict_labels,real_labels)
