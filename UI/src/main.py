@@ -241,8 +241,8 @@ class MyMainWindow(QMainWindow):
         self.picture_chosen = []
         self.manage_btn_available = False
         self.lb_num = 45
-        self.test_num = 198
-        self.ulb_num = 500
+        self.test_num = 50
+        self.ulb_num = 300
 
     def select_folder(self):
         self.folder_path = QFileDialog.getExistingDirectory(None, "选择文件夹", "/")
