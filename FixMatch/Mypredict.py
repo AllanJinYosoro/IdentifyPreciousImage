@@ -296,7 +296,9 @@ if __name__ == '__main__':
     precision = precision_score(real_labels, predict_labels, average='binary')
     recall = recall_score(real_labels, predict_labels, average='binary')
 
-    print(acc,precision,recall)
+    #print(acc,precision,recall)
 
-    plot_roc(predict_labels,real_labels)
-    plot_ConfusionMatrix(predict_labels,real_labels)
+    #plot_roc(predict_labels,real_labels)
+    #plot_ConfusionMatrix(predict_labels,real_labels)
+    print(test_pathes)
+    print(predict_labels)

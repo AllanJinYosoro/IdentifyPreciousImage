@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget, QVBoxLayout, QLineEdit
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget, QVBoxLayout, QLineEdit, QMessageBox
 
 from PyQt6.QtGui import QPixmap, QIcon, QImage
 from PyQt6.QtCore import QSize
@@ -9,7 +9,91 @@ from image import *
 from error_handler import show_error_dialog
 
 import threading
+import subprocess
 import os
+import json
+import shutil
+
+class LoginWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.user_data = self.load_user_data()
+
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        # Registration widgets
+        self.register_username_label = QLabel("注册用户名")
+        self.register_username_input = QLineEdit()
+        self.register_password_label = QLabel("注册密码")
+        self.register_password_input = QLineEdit()
+        self.register_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.register_button = QPushButton("注册")
+        self.register_button.clicked.connect(self.register)
+
+        # Login widgets
+        self.login_username_label = QLabel("登录用户名")
+        self.login_username_input = QLineEdit()
+        self.login_password_label = QLabel("登录密码")
+        self.login_password_input = QLineEdit()
+        self.login_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.login_button = QPushButton("登录")
+        self.login_button.clicked.connect(self.login)
+
+        # Add widgets to layout
+        layout.addWidget(self.register_username_label)
+        layout.addWidget(self.register_username_input)
+        layout.addWidget(self.register_password_label)
+        layout.addWidget(self.register_password_input)
+        layout.addWidget(self.register_button)
+        layout.addWidget(self.login_username_label)
+        layout.addWidget(self.login_username_input)
+        layout.addWidget(self.login_password_label)
+        layout.addWidget(self.login_password_input)
+        layout.addWidget(self.login_button)
+
+        self.setLayout(layout)
+
+    def load_user_data(self):
+        try:
+            with open('UI/user/user_data.json', 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
+
+    def save_user_data(self):
+        with open('UI/user/user_data.json', 'w') as f:
+            json.dump(self.user_data, f)
+
+    def register(self):
+        username = self.register_username_input.text()
+        password = self.register_password_input.text()
+
+        if username in self.user_data:
+            QMessageBox.warning(self, "错误", "用户名已存在！")
+        elif not username or not password:
+            QMessageBox.warning(self, "错误", "用户名或密码不能为空！")
+        else:
+            self.user_data[username] = {'username': username, 'password': password}
+            self.save_user_data()
+            QMessageBox.information(self, "成功", "注册成功！")
+
+    def login(self):
+        username = self.login_username_input.text()
+        password = self.login_password_input.text()
+        if  self.user_data.get(username) is not None:
+            if self.user_data.get(username)['password'] == password:
+                self.main_window = MyMainWindow(self.user_data[username])  # Create a new MyMainWindow
+                self.main_window.show()  # Show the main window
+                self.hide()  # Hide the login window
+            else:
+                QMessageBox.warning(self, "错误", "密码错误！")
+        else:
+                QMessageBox.warning(self, "错误", "用户名错误！")
+
 
 class DialogueWindow(QDialog):
     def __init__(self, parent=None):
@@ -99,6 +183,17 @@ class CustomMessageBox(QDialog):
         image_path = button.property("image_path")  # 获取图片地址属性
         self.picture_chosen.append(image_path)
 
+    def train(self):
+        command = ['python', 'FixMatch/Mytrain.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model']
+
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if process.returncode != 0:
+            print(f'Error occurred: {stderr.decode()}')
+        else:
+            print(f'Success! Output: {stdout.decode()}')
+
     def show_next_dialog(self):
         self.close()
 
@@ -116,10 +211,11 @@ class CustomMessageBox(QDialog):
             add_replication_suffix(self.target_folder,self.picture_chosen,'_0')
             add_replication_suffix(self.target_folder,self.picture_not_chosen,'_1')
             self.picture_chosen.clear()
+            self.train()
 
 # 创建一个自定义的主窗口类
 class MyMainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self,user=None):
         super().__init__()
 
         #设置标题
@@ -128,6 +224,8 @@ class MyMainWindow(QMainWindow):
         self.resize(1440,810)
 
         # 创建一个 QLabel，用于显示背景图片
+        self.user = user
+        self.username = user['username']
 
         # 加载背景图片
         self.background_image = QPixmap("UI/assets/images/background.png")
@@ -236,6 +334,31 @@ class MyMainWindow(QMainWindow):
         self.select_folder_btn.move(1060,60)
         self.scroll_area.move(80,120)
 
+        self.avatar_button = QPushButton(self)
+        self.avatar_button.setFixedSize(40, 40)
+        self.avatar_button.move(1150, 2)
+        self.avatar_button.clicked.connect(self.set_avatar)
+        self.avatar_filename = f"UI/user/avatar/{self.username}.png"
+        if not os.path.exists(self.avatar_filename):
+            self.avatar_filename = "UI/assets/images/noavatar.jpg"
+        self.set_avatar_pixmap()
+
+        self.delete_button = QPushButton(self)
+        self.delete_button.setFixedSize(60, 60)
+        self.delete_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background-image: url(UI/assets/images/delete.svg);
+                background-repeat: no-repeat;
+                background-position: center;
+                padding: 0;
+            }
+        """)
+
+        self.delete_button.move(4, 264)
+
+        self.delete_button.clicked.connect(self.delete_btn_clicked)
+        
         # 定义文件夹路径变量
         self.folder_path = ""
         self.picture_chosen = []
@@ -336,21 +459,54 @@ class MyMainWindow(QMainWindow):
             input_text2 = dialogue_window.input_field2.text()
             self.lb_num = int(input_text1)*9
             self.test_num = int(input_text2)*9
-        
+
+    def delete_btn_clicked(self):
+        command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model', '--predict_model_path', f'UI/assets/models/{self.username}_model/checkpoint.pth.tar', '--predict_data_path', 'UI/data/compdata/test']
+
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        # 分割子进程的输出
+        outputs = process.stdout.splitlines()
+
+        self.test_path = outputs[0].decode()
+        self.predict_label = outputs[1].decode()
+
+        if process.returncode != 0:
+            print(f'Error occurred: {stderr.decode()}')
+        else:
+            print(f'Success! Output: {stdout.decode()}')
+
+
+    def set_avatar_pixmap(self):
+        self.avatar_pixmap = QPixmap(self.avatar_filename)
+        self.avatar_icon = QIcon(self.avatar_pixmap)
+        self.avatar_button.setIcon(self.avatar_icon)
+        self.avatar_button.setIconSize(QSize(40,40))  # Set the size of the avatar button to match the image
+
+    def set_avatar(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Select Avatar", "",
+                                              "Images (*.png *.jpeg *.jpg *.bmp *.gif)")
+        if filename:
+            if not os.path.exists("UI/user/avatar"):
+                os.makedirs("UI/user/avatar")
+            avatar_path = f"UI/user/avatar/{self.username}.png"
+            shutil.copyfile(filename, avatar_path)  # copy the selected file to user/avatar directory
+            self.avatar_filename = avatar_path
+            self.set_avatar_pixmap()
 
 def main():
     # 创建应用程序对象
     app = QApplication([])
 
     # 创建窗口实例
-    window = MyMainWindow()
-
+    login_window = LoginWindow()
+    
     # 设置应用程序图标
     icon = QIcon("UI/assets/images/photos.png")
     app.setWindowIcon(icon)
 
     # 显示窗口
-    window.show()
+    login_window.show()
 
     # 启动应用程序的事件循环
     app.exec()

@@ -37,13 +37,13 @@ def get_local_data():
         transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
     ])  #验证集的标准化
  
-    labeled_path='./data/lb'
+    labeled_path='UI/data/compdata/lb'
     train_labeled_dataset=LocalDataSet(labeled_path,transform=transform_labeled)
  
-    unlabeled_path='./data/ulb'
+    unlabeled_path='UI/data/compdata/ulb'
     train_unlabeled_dataset = LocalDataSet(unlabeled_path,transform=TransformFixMatch(mean=cifar100_mean, std=cifar100_std))
  
-    test_path='./data/test'
+    test_path='UI/data/compdata/test'
     test_dataset=LocalDataSet(test_path,transform=transfortm_val)
  
     return train_labeled_dataset,train_unlabeled_dataset,test_dataset

@@ -1,142 +1,129 @@
 import logging
 import math
 import os
-import torch
-import pandas as pd
-
+ 
 import numpy as np
 from PIL import Image
+import pandas as pd
 from torchvision import datasets
-from torch.utils.data import Dataset
 from torchvision import transforms
-
-from .randaugment import RandAugmentMC
-
+import torch
+from torch.utils.data import Dataset, DataLoader
+from dataset.randaugment import RandAugmentMC
+ 
+ 
+ 
 logger = logging.getLogger(__name__)
-
-def GetPhotoGraph(args, root):
-
-    padding = 32
-
-    means,stds = pixelCal()
-
+ 
+cifar10_mean = (0.4914, 0.4822, 0.4465)
+cifar10_std = (0.2471, 0.2435, 0.2616)
+cifar100_mean = (0.5071, 0.4867, 0.4408)
+cifar100_std = (0.2675, 0.2565, 0.2761)
+normal_mean = (0.5, 0.5, 0.5)
+normal_std = (0.5, 0.5, 0.5)
+ 
+ 
+ 
+def get_local_data():
     transform_labeled = transforms.Compose([
         transforms.RandomHorizontalFlip(),
-        transforms.RandomCrop(size=32,
-                              padding=int(padding*0.125),
-                              padding_mode='reflect'),
+        transforms.CenterCrop(size=32),
         transforms.ToTensor(),
-        transforms.Normalize(mean=means, std=stds)
-    ])
-    transform_val = transforms.Compose([
+        transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
+    ])  #有标签数据集的标准化
+    transfortm_val = transforms.Compose([
+        transforms.CenterCrop(size=32),
         transforms.ToTensor(),
-        transforms.Normalize(mean=means, std=stds)
-    ])
+        transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
+    ])  #验证集的标准化
+ 
+    labeled_path='UI/data/compdata/lb'
+    train_labeled_dataset=LocalDataSet(labeled_path,transform=transform_labeled)
+ 
+    unlabeled_path='UI/data/compdata/ulb'
+    train_unlabeled_dataset = LocalDataSet(unlabeled_path,transform=TransformFixMatch(mean=cifar100_mean, std=cifar100_std))
+ 
+    test_path='UI/data/compdata/test'
+    test_dataset=LocalDataSet(test_path,transform=transfortm_val)
+ 
+    return train_labeled_dataset,train_unlabeled_dataset,test_dataset
+ 
+ 
+ 
+ 
+def get_images_and_labels(dir_path):
+ 
+    labels_list = []  # 标签列表
+    images_list = [file_name for file_name in os.listdir(dir_path) if file_name.endswith('.jpg')]
     
-    train_labeled_dataset = read_in_local_graph('train_labeled',transform_labeled,labeled=True)
-    
-    train_unlabeled_dataset = read_in_local_graph('train_unlabeled',TransformFixMatch(mean=means, std=stds))
-    
-    test_dataset = read_in_local_graph('test',transform_val)
+    for i in images_list:
+        if i[-5] == '0':
+            labels_list.append(0)
+        else:labels_list.append(1)
+ 
+    return images_list, labels_list
+ 
+ 
+class LocalDataSet(Dataset):
+    def __init__(self, dir_path, transform=None):
+        self.dir_path = dir_path  # 数据集根目录
+        self.transform = transform
+        self.images, self.labels = get_images_and_labels(self.dir_path)
+ 
+    def __len__(self):
+ 
+        return len(self.images)
+ 
+    def __getitem__(self, index):
+        img_name= self.images[index]
+        img_path=os.path.join(self.dir_path,img_name)
 
-    return train_labeled_dataset, train_unlabeled_dataset, test_dataset
-
-def pixelCal():
-    folder_path = ['./data/train/labeled','./data/test','./data/train/unlabeled']
-    images = [[os.path.join(folder,file) for file in os.listdir(folder) if file.endswith('.jpg')] for folder in folder_path]
-    image_files = images[0]+images[1]+images[2]
-
-    channel = []
-
-    for image_file in image_files:
-        
-        # 使用PIL库打开图片
-        image = Image.open(image_file)
-        
-        # 将图片转换为NumPy数组
-        image_array = np.array(image)
-        
-        # 累积每个通道的像素值之和
-        channel.append(np.average(image_array, axis=(0, 1)))
-
-    channel = np.vstack(channel).T
-    means = np.average(channel,axis=(1))
-    stds = np.std(channel,axis=(1))
-
-    return means,np.array([1,1,1])#stds
-
-def read_in_local_graph(istrain_labeled,transform,labeled=False):
-
-    if istrain_labeled == 'train_labeled':
-        folder_path = r'./data/train/labeled'
-    elif istrain_labeled == 'train_unlabeled':
-        folder_path = r'./data/train/unlabeled'
-    elif istrain_labeled == 'test':
-        folder_path = r'./data/test'
-
-    image_files = [file for file in os.listdir(folder_path) if file.endswith('.jpg')]
-
-    if labeled:
-        tag_data = pd.read_csv('./data/train/labeled/tag.csv')
-        #tensor_images = []
-        image_with_tag = []
-        for image_file in image_files:
-            image_path = os.path.join(folder_path, image_file)
-            image = Image.open(image_path)
-            tensor_image = transform(image)
-            #tensor_images.append(tensor_image)
-            tag = tag_data[tag_data['name'] == image_file].values[:,1]
-            image_with_tag.append((tensor_image,tag))
-            labeled_dataset = MyDataset(image_with_tag)
-        return labeled_dataset
-    else:
-        tensor_images = []
-        for image_file in image_files:
-            # 构建完整的图片路径
-            image_path = os.path.join(folder_path, image_file)
-            # 使用PIL库打开图片
-            image = Image.open(image_path)
-            # 进行数据转换
-            tensor_image = transform(image)
-            # 将转换后的 Tensor 对象添加到列表中
-            tensor_images.append(tensor_image)
-        # 将列表转换为 PyTorch Tensor
-        
-        print(tensor_images[0][0])
-        print('-'*20)
-        print(tensor_images[0][1])
-        print(folder_path)
-        tensor_images = torch.stack(tensor_images)
-        unlabeled_dataset = MyDataset(tensor_images)
-        return unlabeled_dataset
-
+        img = Image.open(img_path)
+        #img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8),cv2.IMREAD_COLOR)  # 读取图片，np.fromfile解决路径中含有中文的问题
+ 
+        # img = torch.from_numpy(img)  # Numpy需要转成torch之后才可以使用transform
+        # img = img.permute(2, 0, 1)
+        #img = Image.fromarray(img)  # 实现array到image的转换，Image可以直接用transform
+        img=self.transform(img)  #重点！！！如果为无标签的一致性正则化，那么此处会返回两个图   img即为一个list
+        label = self.labels[index]
+        return img,label
+ 
+ 
 class TransformFixMatch(object):
     def __init__(self, mean, std):
         self.weak = transforms.Compose([
             transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(size=32,
-                                  padding=int(32*0.125),
-                                  padding_mode='reflect')])
+            transforms.CenterCrop(size=32)])    #弱增强
+ 
         self.strong = transforms.Compose([
             transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(size=32,
-                                  padding=int(32*0.125),
-                                  padding_mode='reflect'),
-            RandAugmentMC(n=2, m=10)])
+            transforms.CenterCrop(size=32),
+            RandAugmentMC(n=2, m=10)])      #强增强，比弱增强多了两种图像失真处理
+ 
         self.normalize = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std)])
-
+ 
     def __call__(self, x):
         weak = self.weak(x)
         strong = self.strong(x)
-        return self.normalize(weak), self.normalize(strong)
-
-
-class MyDataset(Dataset):
-    def __init__(self,data=None):
-        self.x = data
-    def __getitem__(self, index):
-        return self.x[index]
-    def __len__(self):
-        return len(self.x)
+        #将弱增强后的图  强增强的图  分别进行标准化
+        return self.normalize(weak), self.normalize(strong)   #返回一对弱增强、强增强
+ 
+ 
+if __name__ == '__main__':
+    labeled_dataset,unlabeled_dataset,test_dataset=get_local_data()
+    labeled_trainloader = DataLoader(
+        labeled_dataset,
+        batch_size=5,
+        drop_last=True)
+    unlabeled_trainloader = DataLoader(
+        unlabeled_dataset,
+        batch_size=5*7,
+        drop_last=True)
+    test_trainloader = DataLoader(
+        test_dataset,
+        batch_size=1,
+        drop_last=True)
+    loader = iter(labeled_trainloader)
+    print(next(loader))
