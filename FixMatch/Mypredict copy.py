@@ -19,36 +19,15 @@ from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from PIL import Image
-from torch.utils.data import Dataset
 
 from dataset.cifar import get_local_data
 from utils import AverageMeter, accuracy,pre_rec
 from Mytrain import create_model
 from torchvision import transforms
-from dataset.cifar import get_images_and_labels
+from dataset.cifar import LocalDataSet
 
 cifar10_mean = (0.4914, 0.4822, 0.4465)
 cifar10_std = (0.2471, 0.2435, 0.2616)
-
-class LocalDataSet(Dataset):
-    def __init__(self, dir_path, transform=None):
-        self.dir_path = dir_path  # 数据集根目录
-        self.transform = transform
-        self.images, self.labels = get_images_and_labels(self.dir_path)
- 
-    def __len__(self):
-        return len(self.images)
- 
-    def __getitem__(self, index):
-        img_name= self.images[index]
-        img_path=os.path.join(self.dir_path,img_name)
-
-        img = Image.open(img_path)
-
-        img=self.transform(img)
-        label = self.labels[index]
-        return img, label, img_path  # 返回图像，标签以及图像路径
 
 def get_predict_dataloader(args):
     transfortm_val = transforms.Compose([
@@ -103,7 +82,7 @@ def predict(args, model_checkpoint_path, test_loader):
     all_labels = []
     
     with torch.no_grad():
-        for inputs, labels,_ in test_loader:
+        for inputs, labels in test_loader:
             inputs = inputs.to(device)
             labels = labels.to(device)
             
@@ -284,14 +263,20 @@ if __name__ == '__main__':
 
     test_dataloader = get_predict_dataloader(args)
 
-    predictions,real_labels = predict(args,args.predict_model_path,test_dataloader)
-    predict_labels = np.argmax(predictions, axis=1)
+    predictions,predict_labels = predict(args,args.predict_model_path,test_dataloader)
+
+    real_labels = []
+    for i, (inputs, targets) in enumerate(test_dataloader):
+        real_labels = np.hstack([real_labels,targets])
+        print(inputs)
     
     acc = accuracy_score(real_labels, predict_labels)
     precision = precision_score(real_labels, predict_labels, average='binary')
     recall = recall_score(real_labels, predict_labels, average='binary')
 
     print(acc,precision,recall)
+    print(predict_labels)
+    print(real_labels)
 
     plot_roc(predict_labels,real_labels)
     plot_ConfusionMatrix(predict_labels,real_labels)
