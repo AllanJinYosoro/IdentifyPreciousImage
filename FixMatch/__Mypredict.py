@@ -284,12 +284,12 @@ if __name__ == '__main__':
 
     test_dataloader = get_predict_dataloader(args)
 
-    inputs,predict_labels = predict(args,args.predict_model_path,test_dataloader)
+    predictions,real_labels = predict(args,args.predict_model_path,test_dataloader)
+    predict_labels = np.argmax(predictions, axis=1)
 
-    test_pathes,real_labels = [],[]
+    test_pathes = []
     for i, (inputs, targets,pathes) in enumerate(test_dataloader):
         test_pathes = np.hstack([test_pathes,pathes])
-        real_labels = np.hastack([real_labels,targets])
     #test_pathes是文件地址与predict_labels一一对应
     
     acc = accuracy_score(real_labels, predict_labels)
