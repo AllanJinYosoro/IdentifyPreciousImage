@@ -289,7 +289,7 @@ if __name__ == '__main__':
     test_pathes,real_labels = [],[]
     for i, (inputs, targets,pathes) in enumerate(test_dataloader):
         test_pathes = np.hstack([test_pathes,pathes])
-        real_labels = np.hastack([real_labels,targets])
+        real_labels = np.hstack([real_labels,targets])
     #test_pathes是文件地址与predict_labels一一对应
     
     acc = accuracy_score(real_labels, predict_labels)
@@ -298,7 +298,7 @@ if __name__ == '__main__':
 
     #print(acc,precision,recall)
 
-    #plot_roc(predict_labels,real_labels)
-    #plot_ConfusionMatrix(predict_labels,real_labels)
+    plot_roc(predict_labels,real_labels)
+    plot_ConfusionMatrix(predict_labels,real_labels)
     print(test_pathes)
     print(predict_labels)

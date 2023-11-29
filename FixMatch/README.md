@@ -15,9 +15,9 @@ test in ./data/test
 ```
 # python Mytrain.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 1024 --total-steps 204800 --arch wideresnet  --lr 0.03 --expand-labels --seed 5  --out results/202311281553
 
-python Mypredict.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 1024 --total-steps 204800 --arch wideresnet  --lr 0.03 --expand-labels --seed 5  --out results/202311101435JXH --predict_model_path results\JXH\checkpoint.pth.tar --predict_data_path ./data/test
-
 python Mypredict.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 1024 --total-steps 102400 --arch wideresnet  --lr 0.03 --expand-labels --seed 5  --out results/202311211517FXY --predict_model_path results\checkpoint.pth.tar --predict_data_path ./results/test
+
+python __Mypredict.py --num-workers 4 --dataset PhotoGraph --batch-size 9 --num-labeled 45 --eval-step 1024 --total-steps 102400 --arch wideresnet  --lr 0.03 --expand-labels --seed 5  --out results/202311211517FXY --predict_model_path results\model_best.pth.tar --predict_data_path ./results/test
 ```
 ### Requirements
 - python 3.6+
