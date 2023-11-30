@@ -1,0 +1,12 @@
+numpy
+pillow
+pandas
+torch
+torchvision
+sklearn
+matplotlib
+plotly
+tqdm
+tensorboard
+PyQt6
+clustimage
