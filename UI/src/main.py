@@ -125,6 +125,64 @@ class DialogueWindow(QDialog):
         self.button.clicked.connect(self.accept)
 
 #创建一个对话框类
+class delete_dialog(QDialog):
+    def __init__(self,username,parent=None):
+        super().__init__(parent)
+        
+        # 设置对话框的大小
+        self.setMinimumSize(500, 250) 
+        self.username = username
+
+        self.renew_button = QPushButton('更新模型')
+        self.renew_button.clicked.connect(self.update_btn_clicked)
+
+        self.apply_button = QPushButton('应用模型')
+        self.apply_button.clicked.connect(self.apply_btn_clicked)
+
+        self.layout = QVBoxLayout(self)
+        self.layout.addWidget(self.renew_button)
+        self.layout.addWidget(self.apply_button)
+
+        self.test_path = []
+        self.predict_label = []
+
+    def update_btn_clicked(self):
+        self.close()
+        self.train()
+
+    def apply_btn_clicked(self):
+        self.close()
+        self.delete()
+
+    def train(self):
+        command = ['python', 'FixMatch/Mytrain.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model']
+
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if process.returncode != 0:
+            print(f'Error occurred: {stderr.decode()}')
+        else:
+            print(f'Success! Output: {stdout.decode()}')
+    
+    def delete(self):
+        command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model', '--predict_model_path', f'UI/assets/models/{self.username}_model/checkpoint.pth.tar', '--predict_data_path', 'UI/data/compdata/all']
+
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        # 分割子进程的输出
+        outputs = process.stdout.splitlines()
+
+        self.test_path = outputs[0].decode()
+        self.predict_label = outputs[1].decode()
+
+        if process.returncode != 0:
+            print(f'Error occurred: {stderr.decode()}')
+        else:
+            print(f'Success! Output: {stdout.decode()}')
+
+
+#创建一个对话框类
 class CustomMessageBox(QDialog):
     def __init__(self,pictures,target_folder,picnum,picture_chosen,parent=None):
         super().__init__(parent)
@@ -183,16 +241,6 @@ class CustomMessageBox(QDialog):
         image_path = button.property("image_path")  # 获取图片地址属性
         self.picture_chosen.append(image_path)
 
-    def train(self):
-        command = ['python', 'FixMatch/Mytrain.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model']
-
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-
-        if process.returncode != 0:
-            print(f'Error occurred: {stderr.decode()}')
-        else:
-            print(f'Success! Output: {stdout.decode()}')
 
     def show_next_dialog(self):
         self.close()
@@ -211,7 +259,7 @@ class CustomMessageBox(QDialog):
             add_replication_suffix(self.target_folder,self.picture_chosen,'_0')
             add_replication_suffix(self.target_folder,self.picture_not_chosen,'_1')
             self.picture_chosen.clear()
-            self.train()
+            
 
 # 创建一个自定义的主窗口类
 class MyMainWindow(QMainWindow):
@@ -461,20 +509,10 @@ class MyMainWindow(QMainWindow):
             self.test_num = int(input_text2)*9
 
     def delete_btn_clicked(self):
-        command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model', '--predict_model_path', f'UI/assets/models/{self.username}_model/checkpoint.pth.tar', '--predict_data_path', 'UI/data/compdata/test']
-
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        # 分割子进程的输出
-        outputs = process.stdout.splitlines()
-
-        self.test_path = outputs[0].decode()
-        self.predict_label = outputs[1].decode()
-
-        if process.returncode != 0:
-            print(f'Error occurred: {stderr.decode()}')
-        else:
-            print(f'Success! Output: {stdout.decode()}')
+        delete_dialogue_window = delete_dialog(self.username,self)
+        delete_dialogue_window.exec()
+        self.test_path = delete_dialogue_window.test_path
+        self.predict_label = delete_dialogue_window.predict_label
 
 
     def set_avatar_pixmap(self):
@@ -493,6 +531,8 @@ class MyMainWindow(QMainWindow):
             shutil.copyfile(filename, avatar_path)  # copy the selected file to user/avatar directory
             self.avatar_filename = avatar_path
             self.set_avatar_pixmap()
+
+        
 
 def main():
     # 创建应用程序对象
