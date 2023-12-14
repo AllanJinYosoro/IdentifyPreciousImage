@@ -734,17 +734,19 @@ class MyMainWindow(QMainWindow):
         self.folder_path = self.user['photo_dir']
         if self.folder_path:
             self.picture_exist = True
+            self.manage_btn_available = True
             image_paths = [os.path.join(self.folder_path, file) for file in os.listdir(self.folder_path) if file.endswith(('.png', '.jpg', '.jpeg', '.JPG'))]
             self.show_images(image_paths)
         else:
             self.picture_exist = False
+            self.manage_btn_available = False
 
         if self.user['model'] != 'Not completed':
             self.model_exist = True
         else:
             self.model_exist = False
         self.picture_chosen = []
-        self.manage_btn_available = False
+        
         self.lb_num = self.user['parameters'][0]
         self.test_num = self.user['parameters'][1]
         self.ulb_num = 500

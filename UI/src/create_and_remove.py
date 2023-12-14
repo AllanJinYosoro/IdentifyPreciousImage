@@ -52,6 +52,7 @@ def create_and_remove(src_folder,cluster_num,ulb_num,test_num,user):
     shutil.rmtree(f'UI/data/{user}/compdata/all')
 
     src_folder = Path(src_folder) 
+    os.makedirs(f'UI/data/{user}/rawdata')
 
     # 创建子目录
     lb_dir = target_dir / 'lb'
