@@ -865,7 +865,7 @@ class MyMainWindow(QMainWindow):
             if self.manage_btn_available:    
                 try:
                     # 创建自定义消息框窗口
-                    msg_box = SelectMessageBox(get_all_file_paths(f'UI/data/{self.username}/rawdata/lb'),f'UI/data{self.username}/compdata/lb',0,[])
+                    msg_box = SelectMessageBox(get_all_file_paths(f'UI/data/{self.username}/rawdata/lb'),f'UI/data/{self.username}/compdata/lb',0,[])
                 
                     # 显示消息框并等待用户响应
                     msg_box.exec()
