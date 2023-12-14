@@ -24,7 +24,7 @@ normal_std = (0.5, 0.5, 0.5)
  
  
  
-def get_local_data():
+def get_local_data(user):
     transform_labeled = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.CenterCrop(size=32),
@@ -37,13 +37,13 @@ def get_local_data():
         transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
     ])  #验证集的标准化
  
-    labeled_path='UI/data/compdata/lb'
+    labeled_path=f'UI/data/{user}/compdata/lb'
     train_labeled_dataset=LocalDataSet(labeled_path,transform=transform_labeled)
  
-    unlabeled_path='UI/data/compdata/ulb'
+    unlabeled_path=f'UI/data/{user}/compdata/ulb'
     train_unlabeled_dataset = LocalDataSet(unlabeled_path,transform=TransformFixMatch(mean=cifar100_mean, std=cifar100_std))
  
-    test_path='UI/data/compdata/test'
+    test_path=f'UI/data/{user}/compdata/test'
     test_dataset=LocalDataSet(test_path,transform=transfortm_val)
  
     return train_labeled_dataset,train_unlabeled_dataset,test_dataset

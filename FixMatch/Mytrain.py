@@ -142,6 +142,8 @@ def main():
                         help="For distributed training: local_rank")
     parser.add_argument('--no-progress', action='store_true',
                         help="don't use progress bar")
+    parser.add_argument('--user', default='test', type=str,
+                        help="username")
 
     args = parser.parse_args()
     global best_acc
@@ -220,7 +222,7 @@ def main():
         #    args, './data')
         pass
     else:
-        labeled_dataset, unlabeled_dataset, test_dataset = get_local_data()
+        labeled_dataset, unlabeled_dataset, test_dataset = get_local_data(args.user)
 
     if args.local_rank == 0:
         torch.distributed.barrier()

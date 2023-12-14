@@ -25,7 +25,7 @@ def delete_pictures(username):
     # 获取时间最新的文件路径
     newest_file_path = file_paths[0] if file_paths else None
 
-    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', 'UI/data/compdata/all']
+    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', f'UI/data/{username}/compdata/all']
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
