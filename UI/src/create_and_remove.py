@@ -48,11 +48,8 @@ def create_and_remove(src_folder,cluster_num,ulb_num,test_num,user):
 
     cluster_result = generate_file_list(src_folder,cluster_result)
 
-    #删除'UI/data/compdata/all'
-    shutil.rmtree(f'UI/data/{user}/compdata/all')
-
     src_folder = Path(src_folder) 
-    os.makedirs(f'UI/data/{user}/rawdata')
+    if not os.path.exists(f'UI/data/{user}/rawdata'):os.makedirs(f'UI/data/{user}/rawdata')
 
     # 创建子目录
     lb_dir = target_dir / 'lb'
@@ -99,9 +96,9 @@ def create_and_remove(src_folder,cluster_num,ulb_num,test_num,user):
     rename_images(f'UI/data/{user}/rawdata/lb','lb')
     rename_images(f'UI/data/{user}/rawdata/ulb','ulb')
     rename_images(f'UI/data/{user}/rawdata/test','test')
-    compress_images(f'UI/data/{user}/rawdata/lb','UI/data/compdata/lb')
-    compress_images(f'UI/data/{user}/rawdata/ulb','UI/data/compdata/ulb')
-    compress_images(f'UI/data/{user}/rawdata/test','UI/data/compdata/test')
+    compress_images(f'UI/data/{user}/rawdata/lb',f'UI/data/{user}/compdata/lb')
+    compress_images(f'UI/data/{user}/rawdata/ulb',f'UI/data/{user}/compdata/ulb')
+    compress_images(f'UI/data/{user}/rawdata/test',f'UI/data/{user}/compdata/test')
 
     print('completed')
 

@@ -117,6 +117,8 @@ class LoginWindow(QMainWindow):
                 self.main_window = MyMainWindow(self.user_data[username])  # Create a new MyMainWindow
                 self.main_window.show()  # Show the main window
                 self.close()  # Close the login window
+                self.tipswindow = tipswindow(['mainwindow1','mainwindow2','user','profile1','profile2','selectpicture','manage','delete'],0)
+                self.tipswindow.show()
             else:
                 QMessageBox.warning(self, "错误", "密码错误！")
         else:
@@ -245,6 +247,36 @@ class RegisterWindow(QMainWindow):
         self.login_window = LoginWindow()
         self.login_window.show()
         self.close()
+
+class tipswindow(QDialog):
+    def __init__(self,pictures,num):
+        super().__init__()   
+        self.resize(1000, 750)
+        self.setWindowTitle('Tips')
+        self.pictures = pictures
+        self.number = num
+        self.picture = self.pictures[self.number]
+        
+
+        self.tips_picture = QLabel(self)
+        self.tips_picture.setPixmap(QPixmap(f'UI/assets/images/{self.picture}.png'))
+        self.tips_picture.setFixedSize(950, 600)
+        self.tips_picture.move(25, 30)
+
+        self.next_button = QPushButton('Next',self)
+        self.next_button.setFixedSize(100, 50)
+        self.next_button.move(450, 650)
+        self.next_button.clicked.connect(self.next_btn_clicked)
+
+    def next_btn_clicked(self):
+        if self.number == 7:
+            self.close()
+        else:
+            self.close()
+            nextwindow = tipswindow(self.pictures,self.number+1)
+            nextwindow.exec()
+
+
 
 class Userwindow(QWidget):
     def __init__(self,user,mainwindow):
@@ -833,7 +865,7 @@ class MyMainWindow(QMainWindow):
             if self.manage_btn_available:    
                 try:
                     # 创建自定义消息框窗口
-                    msg_box = SelectMessageBox(get_all_file_paths('UI/data/rawdata/lb'),'UI/data/compdata/lb',0,[])
+                    msg_box = SelectMessageBox(get_all_file_paths(f'UI/data/{self.username}/rawdata/lb'),f'UI/data{self.username}/compdata/lb',0,[])
                 
                     # 显示消息框并等待用户响应
                     msg_box.exec()
@@ -849,7 +881,7 @@ class MyMainWindow(QMainWindow):
             if self.manage_btn_available:    
                 try:
                     # 创建自定义消息框窗口
-                    msg_box = SelectMessageBox(get_all_file_paths('UI/data/rawdata/test'),'UI/data/compdata/test',0,[])
+                    msg_box = SelectMessageBox(get_all_file_paths(f'UI/data/{self.username}/rawdata/test'),f'UI/data/{self.username}/compdata/test',0,[])
                 
                     # 显示消息框并等待用户响应
                     msg_box.exec()
