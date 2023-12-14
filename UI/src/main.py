@@ -1,6 +1,8 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget, QVBoxLayout, QLineEdit, QMessageBox
+import typing
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QDialog, QFileDialog, QScrollArea, QGridLayout, QWidget, QVBoxLayout, QLineEdit, QMessageBox, QSlider
 
-from PyQt6.QtGui import QPixmap, QIcon, QImage
+from PyQt6.QtGui import QPixmap, QIcon, QImage, QFont
 from PyQt6.QtCore import QSize
 
 from global_logger import global_logger
@@ -14,48 +16,201 @@ import os
 import json
 import shutil
 
-class LoginWindow(QWidget):
+class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        #设置标题
+        self.setWindowTitle('jxh')
+
         self.user_data = self.load_user_data()
 
-        self.initUI()
+        self.resize(940, 600)
+        # 加载背景图片
+        self.background_image = QPixmap("UI/assets/images/login.png")
 
-    def initUI(self):
-        layout = QVBoxLayout()
+        self.background_label = QLabel(self)
+        self.background_label.setPixmap(self.background_image)
+        self.background_label.setGeometry(0, 0, self.width(), self.height())  # 设置标签大小与窗口大小一致
 
-        # Registration widgets
-        self.register_username_label = QLabel("注册用户名")
-        self.register_username_input = QLineEdit()
-        self.register_password_label = QLabel("注册密码")
-        self.register_password_input = QLineEdit()
-        self.register_password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.register_button = QPushButton("注册")
-        self.register_button.clicked.connect(self.register)
-
+        # 设置字体
+        self.font = QFont()
+        self.font.setPointSize(16)
         # Login widgets
-        self.login_username_label = QLabel("登录用户名")
-        self.login_username_input = QLineEdit()
-        self.login_password_label = QLabel("登录密码")
-        self.login_password_input = QLineEdit()
+        self.login_username_label = QLabel("Username:",self)
+        self.login_username_label.setFont(self.font)
+        self.login_username_input = QLineEdit(self)
+        self.login_username_input.setFixedSize(250, 50) 
+        self.login_username_input.setStyleSheet("""
+                QLineEdit {
+                    border: 1px solid gray;
+                    border-radius: 10px;
+                    padding: 0 8px;
+                    background: white;
+                    selection-background-color: darkgray;
+                }
+            """)
+        self.login_password_label = QLabel("Password:",self)
+        self.login_password_label.setFont(self.font)
+        self.login_password_input = QLineEdit(self)
+        self.login_password_input.setFixedSize(250, 50) 
+        self.login_password_input.setStyleSheet("""
+                QLineEdit {
+                    border: 1px solid gray;
+                    border-radius: 10px;
+                    padding: 0 8px;
+                    background: white;
+                    selection-background-color: darkgray;
+                }
+            """)
         self.login_password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.login_button = QPushButton("登录")
+        self.login_button = QPushButton("Sign in",self)
+        self.login_button.setFont(self.font)
+        self.login_button.setFixedSize(250, 50)
+        self.login_button.setStyleSheet("""
+                QPushButton {
+                    border: none;
+                    border-radius: 10px;
+                    background-color: #80C8FF;
+                }
+            """)
         self.login_button.clicked.connect(self.login)
 
-        # Add widgets to layout
-        layout.addWidget(self.register_username_label)
-        layout.addWidget(self.register_username_input)
-        layout.addWidget(self.register_password_label)
-        layout.addWidget(self.register_password_input)
-        layout.addWidget(self.register_button)
-        layout.addWidget(self.login_username_label)
-        layout.addWidget(self.login_username_input)
-        layout.addWidget(self.login_password_label)
-        layout.addWidget(self.login_password_input)
-        layout.addWidget(self.login_button)
+        self.skip_button = QPushButton('Don\'t have an account? Sign up',self)
+        self.skip_button.setFixedSize(250, 50)
 
-        self.setLayout(layout)
+        self.skip_button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                color: blue;
+            }
+            QPushButton:pressed {
+                color: red;
+            }
+        """)
+        self.skip_button.clicked.connect(self.turn_to_register)
+
+        # Add widgets to window
+        self.login_username_label.move(583, 156)
+        self.login_username_input.move(583, 196)
+        self.login_password_label.move(583, 255)
+        self.login_password_input.move(583, 293)
+        self.login_button.move(583, 385)
+        self.skip_button.move(583, 450)
+
+    def load_user_data(self):
+        try:
+            with open('UI/user/user_data.json', 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
+        
+    def login(self):
+        username = self.login_username_input.text()
+        password = self.login_password_input.text()
+        if  self.user_data.get(username) is not None:
+            if self.user_data.get(username)['password'] == password:
+                self.main_window = MyMainWindow(self.user_data[username])  # Create a new MyMainWindow
+                self.main_window.show()  # Show the main window
+                self.close()  # Close the login window
+            else:
+                QMessageBox.warning(self, "错误", "密码错误！")
+        else:
+                QMessageBox.warning(self, "错误", "用户名错误！")
+
+    def turn_to_register(self):
+        self.register_window = RegisterWindow()
+        self.register_window.show()
+        self.close()
+
+class RegisterWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        #设置标题
+        self.setWindowTitle('jxh')
+
+        self.user_data = self.load_user_data()
+
+        self.resize(940, 600)
+        # 加载背景图片
+        self.background_image = QPixmap("UI/assets/images/login.png")
+
+        self.background_label = QLabel(self)
+        self.background_label.setPixmap(self.background_image)
+        self.background_label.setGeometry(0, 0, self.width(), self.height())  # 设置标签大小与窗口大小一致
+
+        # 设置字体
+        self.font = QFont()
+        self.font.setPointSize(16)  # 设置字体大小为 14
+        # Registration widgets
+        self.register_username_label = QLabel("Username:",self)
+        self.register_username_label.setFont(self.font)
+        self.register_username_input = QLineEdit(self)
+        self.register_username_input.setFixedSize(250, 50) 
+        self.register_username_input.setStyleSheet("""
+                QLineEdit {
+                    border: 1px solid gray;
+                    border-radius: 10px;
+                    padding: 0 8px;
+                    background: white;
+                    selection-background-color: darkgray;
+                }
+            """)
+        self.register_password_label = QLabel("Password:",self)
+        self.register_password_label.setFont(self.font)
+        self.register_password_input = QLineEdit(self)
+        self.register_password_input.setFixedSize(250, 50) 
+        self.register_password_input.setStyleSheet("""
+                QLineEdit {
+                    border: 1px solid gray;
+                    border-radius: 10px;
+                    padding: 0 8px;
+                    background: white;
+                    selection-background-color: darkgray;
+                }
+            """)
+        self.register_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.register_button = QPushButton("Sign up",self)
+        self.register_button.setFont(self.font)
+        self.register_button.setFixedSize(250, 50)
+        self.register_button.setStyleSheet("""
+                QPushButton {
+                    border: none;
+                    border-radius: 10px;
+                    background-color: #80C8FF;
+                }
+            """)
+        self.register_button.clicked.connect(self.register)
+
+        self.skip_button = QPushButton('Already a member? Sign in',self)
+        self.skip_button.setFixedSize(250, 50)
+
+        self.skip_button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                color: blue;
+            }
+            QPushButton:pressed {
+                color: red;
+            }
+        """)
+        self.skip_button.clicked.connect(self.turn_to_login)
+
+        # Add widgets to window
+        self.register_username_label.move(583, 156)
+        self.register_username_input.move(583, 196)
+        self.register_password_label.move(583, 255)
+        self.register_password_input.move(583, 293)
+        self.register_button.move(583, 385)
+        self.skip_button.move(583, 450)
+
 
     def load_user_data(self):
         try:
@@ -77,22 +232,146 @@ class LoginWindow(QWidget):
         elif not username or not password:
             QMessageBox.warning(self, "错误", "用户名或密码不能为空！")
         else:
-            self.user_data[username] = {'username': username, 'password': password}
+            self.user_data[username] = {'username': username, 'password': password, 'parameters': [45,45], 'model': 'Not completed'}
             self.save_user_data()
             QMessageBox.information(self, "成功", "注册成功！")
+            self.login_window = LoginWindow()  # Create a new LoginWindow
+            self.login_window.show()
+            self.close()  # Close the register window
 
-    def login(self):
-        username = self.login_username_input.text()
-        password = self.login_password_input.text()
-        if  self.user_data.get(username) is not None:
-            if self.user_data.get(username)['password'] == password:
-                self.main_window = MyMainWindow(self.user_data[username])  # Create a new MyMainWindow
-                self.main_window.show()  # Show the main window
-                self.hide()  # Hide the login window
-            else:
-                QMessageBox.warning(self, "错误", "密码错误！")
-        else:
-                QMessageBox.warning(self, "错误", "用户名错误！")
+    def turn_to_login(self):
+        self.login_window = LoginWindow()
+        self.login_window.show()
+        self.close()
+
+class Userwindow(QWidget):
+    def __init__(self,user,mainwindow):
+        super().__init__() 
+        self.resize(60, 140)
+        
+        self.avatar_button = QPushButton(self)
+        self.avatar_button.setFixedSize(40, 40)
+        self.avatar_button.move(10, 10)
+        self.user = user
+        self.username = user['username']
+        self.mainwindow = mainwindow
+
+        self.avatar_button.clicked.connect(self.set_avatar)
+        self.avatar_filename = f"UI/user/avatar/{self.username}.png"
+        if not os.path.exists(self.avatar_filename):
+            self.avatar_filename = "UI/assets/images/noavatar.jpg"
+        self.set_avatar_pixmap()
+
+        self.profile_button = QPushButton(self)
+        self.profile_button.setFixedSize(60, 30)
+        self.profile_button.move(0, 60)
+        self.profile_button.setText('profile')
+        self.profile_button.clicked.connect(self.show_profile)
+
+        self.sign_out_button = QPushButton(self)
+        self.sign_out_button.setFixedSize(60, 30)
+        self.sign_out_button.move(0, 90)
+        self.sign_out_button.setText('sign out')
+        self.sign_out_button.clicked.connect(self.sign_out)
+
+    def set_avatar_pixmap(self):
+        self.avatar_pixmap = QPixmap(self.avatar_filename)
+        self.avatar_icon = QIcon(self.avatar_pixmap)
+        self.avatar_button.setIcon(self.avatar_icon)
+        self.avatar_button.setIconSize(QSize(40,40))  # Set the size of the avatar button to match the image
+
+    def set_avatar(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Select Avatar", "",
+                                              "Images (*.png *.jpeg *.jpg *.bmp *.gif)")
+        if filename:
+            if not os.path.exists("UI/user/avatar"):
+                os.makedirs("UI/user/avatar")
+            avatar_path = f"UI/user/avatar/{self.username}.png"
+            shutil.copyfile(filename, avatar_path)  # copy the selected file to user/avatar directory
+            self.avatar_filename = avatar_path
+            self.set_avatar_pixmap()
+
+    def show_profile(self):
+        self.profile_window = ProfileWindow(self.user)
+        self.profile_window.show()
+        self.close()
+        self.mainwindow.close()
+
+    def sign_out(self):
+        self.mainwindow.close()
+        self.login_window = LoginWindow()
+        self.login_window.show()
+
+class ProfileWindow(QMainWindow):
+    def __init__(self,user):
+        super().__init__()
+        self.user = user
+        self.user_name = self.user['username']
+        self.parameters = self.user['parameters']
+        self.user_model = self.user['model']
+
+        self.resize(1440, 810)
+        # 加载背景图片
+        self.background_image = QPixmap("UI/assets/images/background.png")
+
+        self.background_label = QLabel(self)
+        self.background_label.setPixmap(self.background_image)
+        self.background_label.setGeometry(0, 0, self.width(), self.height())
+
+        self.back_btn = 
+
+        self.username_label = QLabel(f'username',self)
+        self.username_label.setFont(QFont('Arial', 40))
+        self.username_label.move(380, 190)
+
+        self.label_number = QLabel(f'Number of labelled pictures: {self.parameters[0]}', self)
+        self.label_number.setFont(QFont('Arial', 32))
+        self.label_number.move(190, 360)
+
+        self.test_number = QLabel(f'Number of test pictures: {self.parameters[1]}', self)
+        self.test_number.setFont(QFont('Arial', 32))
+        self.test_number.move(190, 470)
+
+        self.model_status = QLabel('Model status:', self)
+        self.model_status.setFont(QFont('Arial', 32))
+        self.model_status.move(190, 580)
+
+        self.if_model = QLabel(f'{self.user_model}', self)
+        self.if_model.setFont(QFont('Arial', 32))
+        self.if_model.move(800, 580)
+
+        # 创建滑块
+        self.label_slider = QSlider(Qt.Orientation.Horizontal, self)
+        self.label_slider.setRange(0, 100)
+        self.label_slider.setValue((self.parameters[0]/9))
+        self.label_slider.move(800, 360)
+        self.label_slider.setFixedSize(480,30)
+        self.label_slider.valueChanged.connect(self.LabelValueChanged)
+
+        self.test_slider = QSlider(Qt.Orientation.Horizontal, self)
+        self.test_slider.setRange(0, 100)
+        self.test_slider.setValue((self.parameters[1]/9))
+        self.test_slider.move(800, 470)
+        self.test_slider.setFixedSize(480,30)
+        self.test_slider.valueChanged.connect(self.TestValueChanged)
+
+    def LabelValueChanged(self, value):
+        self.label_number.setText(f'Number of labelled pictures: {value*9}')
+        self.parameters[0] = value*9
+        self.user['parameters'] = self.parameters
+
+    def TestValueChanged(self, value):
+        self.test_number.setText(f'Number of test pictures: {value*9}')
+        self.parameters[1] = value*9
+        self.user['parameters'] = self.parameters
+
+    def save_user_data(self):
+        with open('UI/user/user_data.json', 'r') as f:
+                self.data_to_dump = json.load(f)
+
+        self.data_to_dump[self.user_name] = self.user
+        with open('UI/user/user_data.json', 'w') as f:
+            json.dump(self.data_to_dump, f)
 
 
 class DialogueWindow(QDialog):
@@ -271,7 +550,6 @@ class MyMainWindow(QMainWindow):
         #设置窗口大小
         self.resize(1440,810)
 
-        # 创建一个 QLabel，用于显示背景图片
         self.user = user
         self.username = user['username']
 
@@ -382,10 +660,10 @@ class MyMainWindow(QMainWindow):
         self.select_folder_btn.move(1060,60)
         self.scroll_area.move(80,120)
 
-        self.avatar_button = QPushButton(self)
-        self.avatar_button.setFixedSize(40, 40)
-        self.avatar_button.move(1150, 2)
-        self.avatar_button.clicked.connect(self.set_avatar)
+        self.user_button = QPushButton(self)
+        self.user_button.setFixedSize(40, 40)
+        self.user_button.move(1150, 2)
+        self.user_button.clicked.connect(self.user_window)
         self.avatar_filename = f"UI/user/avatar/{self.username}.png"
         if not os.path.exists(self.avatar_filename):
             self.avatar_filename = "UI/assets/images/noavatar.jpg"
@@ -514,23 +792,16 @@ class MyMainWindow(QMainWindow):
         self.test_path = delete_dialogue_window.test_path
         self.predict_label = delete_dialogue_window.predict_label
 
-
     def set_avatar_pixmap(self):
         self.avatar_pixmap = QPixmap(self.avatar_filename)
         self.avatar_icon = QIcon(self.avatar_pixmap)
-        self.avatar_button.setIcon(self.avatar_icon)
-        self.avatar_button.setIconSize(QSize(40,40))  # Set the size of the avatar button to match the image
+        self.user_button.setIcon(self.avatar_icon)
+        self.user_button.setIconSize(QSize(40,40))  # Set the size of the avatar button to match the image
 
-    def set_avatar(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Select Avatar", "",
-                                              "Images (*.png *.jpeg *.jpg *.bmp *.gif)")
-        if filename:
-            if not os.path.exists("UI/user/avatar"):
-                os.makedirs("UI/user/avatar")
-            avatar_path = f"UI/user/avatar/{self.username}.png"
-            shutil.copyfile(filename, avatar_path)  # copy the selected file to user/avatar directory
-            self.avatar_filename = avatar_path
-            self.set_avatar_pixmap()
+    def user_window(self):
+        self.user_window = Userwindow(self.user,self)
+        self.user_window.move(1150, 2)
+        self.user_window.show()
 
         
 
@@ -539,14 +810,14 @@ def main():
     app = QApplication([])
 
     # 创建窗口实例
-    login_window = LoginWindow()
+    register_window = RegisterWindow()
     
     # 设置应用程序图标
     icon = QIcon("UI/assets/images/photos.png")
     app.setWindowIcon(icon)
 
     # 显示窗口
-    login_window.show()
+    register_window.show()
 
     # 启动应用程序的事件循环
     app.exec()
