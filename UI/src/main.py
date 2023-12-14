@@ -256,7 +256,6 @@ class Userwindow(QWidget):
         self.username = user['username']
         self.mainwindow = mainwindow
 
-        self.avatar_button.clicked.connect(self.set_avatar)
         self.avatar_filename = f"UI/user/avatar/{self.username}.png"
         if not os.path.exists(self.avatar_filename):
             self.avatar_filename = "UI/assets/images/noavatar.jpg"
@@ -280,36 +279,26 @@ class Userwindow(QWidget):
         self.avatar_button.setIcon(self.avatar_icon)
         self.avatar_button.setIconSize(QSize(40,40))  # Set the size of the avatar button to match the image
 
-    def set_avatar(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Select Avatar", "",
-                                              "Images (*.png *.jpeg *.jpg *.bmp *.gif)")
-        if filename:
-            if not os.path.exists("UI/user/avatar"):
-                os.makedirs("UI/user/avatar")
-            avatar_path = f"UI/user/avatar/{self.username}.png"
-            shutil.copyfile(filename, avatar_path)  # copy the selected file to user/avatar directory
-            self.avatar_filename = avatar_path
-            self.set_avatar_pixmap()
-
     def show_profile(self):
-        self.profile_window = ProfileWindow(self.user)
+        self.profile_window = ProfileWindow(self.user,self.mainwindow)
         self.profile_window.show()
         self.close()
-        self.mainwindow.close()
+        self.mainwindow.hide()
 
     def sign_out(self):
         self.mainwindow.close()
+        self.close()
         self.login_window = LoginWindow()
         self.login_window.show()
 
 class ProfileWindow(QMainWindow):
-    def __init__(self,user):
+    def __init__(self,user,mainwindow):
         super().__init__()
         self.user = user
         self.user_name = self.user['username']
         self.parameters = self.user['parameters']
         self.user_model = self.user['model']
-
+        self.mainwindow = mainwindow
         self.resize(1440, 810)
         # 加载背景图片
         self.background_image = QPixmap("UI/assets/images/background.png")
@@ -318,42 +307,78 @@ class ProfileWindow(QMainWindow):
         self.background_label.setPixmap(self.background_image)
         self.background_label.setGeometry(0, 0, self.width(), self.height())
 
-        self.back_btn = 
+        self.back_btn = QPushButton(self)
+        self.back_btn.setFixedSize(40, 40)
+        self.back_btn.setIcon(QIcon('UI/assets/images/back.svg'))
+        self.back_btn.setIconSize(QSize(40, 40))
+        self.back_btn.move(10, 10)
+        self.back_btn.clicked.connect(self.back_btn_clicked)
 
-        self.username_label = QLabel(f'username',self)
+        self.avatar_button = QPushButton(self)
+        self.avatar_button.setFixedSize(130, 130)
+        self.avatar_button.move(170, 140)
+        self.avatar_filename = f"UI/user/avatar/{self.user_name}.png"
+        if not os.path.exists(self.avatar_filename):
+            self.avatar_filename = "UI/assets/images/noavatar.jpg"
+        self.set_avatar_pixmap()
+        self.avatar_button.clicked.connect(self.set_avatar)
+
+        self.username_label = QLabel(f'{self.user_name}',self)
         self.username_label.setFont(QFont('Arial', 40))
+        self.username_label.setFixedSize(300, 50)
         self.username_label.move(380, 190)
 
         self.label_number = QLabel(f'Number of labelled pictures: {self.parameters[0]}', self)
         self.label_number.setFont(QFont('Arial', 32))
+        self.label_number.setFixedSize(500, 50)
         self.label_number.move(190, 360)
 
         self.test_number = QLabel(f'Number of test pictures: {self.parameters[1]}', self)
         self.test_number.setFont(QFont('Arial', 32))
         self.test_number.move(190, 470)
+        self.test_number.setFixedSize(500,50)
 
         self.model_status = QLabel('Model status:', self)
         self.model_status.setFont(QFont('Arial', 32))
         self.model_status.move(190, 580)
+        self.model_status.setFixedSize(500,50)
 
         self.if_model = QLabel(f'{self.user_model}', self)
         self.if_model.setFont(QFont('Arial', 32))
         self.if_model.move(800, 580)
+        self.if_model.setFixedSize(500,50)
 
         # 创建滑块
         self.label_slider = QSlider(Qt.Orientation.Horizontal, self)
         self.label_slider.setRange(0, 100)
         self.label_slider.setValue((self.parameters[0]/9))
         self.label_slider.move(800, 360)
-        self.label_slider.setFixedSize(480,30)
+        self.label_slider.setFixedSize(320,30)
         self.label_slider.valueChanged.connect(self.LabelValueChanged)
 
         self.test_slider = QSlider(Qt.Orientation.Horizontal, self)
         self.test_slider.setRange(0, 100)
         self.test_slider.setValue((self.parameters[1]/9))
         self.test_slider.move(800, 470)
-        self.test_slider.setFixedSize(480,30)
+        self.test_slider.setFixedSize(320,30)
         self.test_slider.valueChanged.connect(self.TestValueChanged)
+
+    def set_avatar_pixmap(self):
+        self.avatar_pixmap = QPixmap(self.avatar_filename)
+        self.avatar_icon = QIcon(self.avatar_pixmap)
+        self.avatar_button.setIcon(self.avatar_icon)
+        self.avatar_button.setIconSize(QSize(130,130))
+
+    def set_avatar(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Select Avatar", "",
+                                              "Images (*.png *.jpeg *.jpg *.bmp *.gif)")
+        if filename:
+            if not os.path.exists("UI/user/avatar"):
+                os.makedirs("UI/user/avatar")
+            avatar_path = f"UI/user/avatar/{self.user_name}.png"
+            shutil.copyfile(filename, avatar_path)  # copy the selected file to user/avatar directory
+            self.avatar_filename = avatar_path
+            self.set_avatar_pixmap()
 
     def LabelValueChanged(self, value):
         self.label_number.setText(f'Number of labelled pictures: {value*9}')
@@ -373,35 +398,11 @@ class ProfileWindow(QMainWindow):
         with open('UI/user/user_data.json', 'w') as f:
             json.dump(self.data_to_dump, f)
 
-
-class DialogueWindow(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.setWindowTitle("setting")
-
-        # 创建一个布局
-        layout = QVBoxLayout(self)
-
-        # 创建第一个输入框标签和输入框
-        label1 = QLabel("label组数(9个一组):")
-        layout.addWidget(label1)
-
-        self.input_field1 = QLineEdit()
-        layout.addWidget(self.input_field1)
-
-        # 创建第二个输入框标签和输入框
-        label2 = QLabel("test组数(9个一组):")
-        layout.addWidget(label2)
-
-        self.input_field2 = QLineEdit()
-        layout.addWidget(self.input_field2)
-
-        self.button = QPushButton("提交")
-        layout.addWidget(self.button)
-
-        # 连接按钮的点击事件到槽函数
-        self.button.clicked.connect(self.accept)
+    def back_btn_clicked(self):
+        self.save_user_data()
+        self.mainwindow.reload()
+        self.mainwindow.show()
+        self.close()
 
 #创建一个对话框类
 class delete_dialog(QDialog):
@@ -432,6 +433,7 @@ class delete_dialog(QDialog):
     def apply_btn_clicked(self):
         self.close()
         self.delete()
+
 
     def train(self):
         command = ['python', 'FixMatch/Mytrain.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model']
@@ -601,26 +603,6 @@ class MyMainWindow(QMainWindow):
         # 将按钮的点击信号连接到槽函数
         self.test_btn.clicked.connect(self.test_btn_clicked)
 
-                # test按钮
-        self.setting_btn = QPushButton(self)
-        self.setting_btn.setFixedSize(60, 60)
-
-        # 设置按钮的样式表
-        self.setting_btn.setStyleSheet("""
-            QPushButton {
-                border: none;
-                background-image: url(UI/assets/images/setting.svg);
-                background-repeat: no-repeat;
-                background-position: center;
-                padding: 0;
-            }
-        """)
-
-        self.setting_btn.move(4, 192)
-
-        # 将按钮的点击信号连接到槽函数
-        self.setting_btn.clicked.connect(self.setting_btn_clicked)
-
         # 创建滚动框
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
@@ -662,7 +644,7 @@ class MyMainWindow(QMainWindow):
 
         self.user_button = QPushButton(self)
         self.user_button.setFixedSize(40, 40)
-        self.user_button.move(1150, 2)
+        self.user_button.move(1200, 2)
         self.user_button.clicked.connect(self.user_window)
         self.avatar_filename = f"UI/user/avatar/{self.username}.png"
         if not os.path.exists(self.avatar_filename):
@@ -670,7 +652,7 @@ class MyMainWindow(QMainWindow):
         self.set_avatar_pixmap()
 
         self.delete_button = QPushButton(self)
-        self.delete_button.setFixedSize(60, 60)
+        self.delete_button.setFixedSize(96, 32)
         self.delete_button.setStyleSheet("""
             QPushButton {
                 border: none;
@@ -681,7 +663,7 @@ class MyMainWindow(QMainWindow):
             }
         """)
 
-        self.delete_button.move(4, 264)
+        self.delete_button.move(1160,60)
 
         self.delete_button.clicked.connect(self.delete_btn_clicked)
         
@@ -689,9 +671,17 @@ class MyMainWindow(QMainWindow):
         self.folder_path = ""
         self.picture_chosen = []
         self.manage_btn_available = False
-        self.lb_num = 45
-        self.test_num = 198
+        self.lb_num = self.user['parameters'][0]
+        self.test_num = self.user['parameters'][1]
         self.ulb_num = 500
+
+    def reload(self):
+        self.set_avatar_pixmap()
+        with open('UI/user/user_data.json', 'r') as f:
+                self.user_data = json.load(f)
+        self.user = self.user_data[self.username]
+        self.lb_num = self.user['parameters'][0]
+        self.test_num = self.user['parameters'][1]
 
     def select_folder(self):
         self.folder_path = QFileDialog.getExistingDirectory(None, "选择文件夹", "/")
@@ -778,14 +768,6 @@ class MyMainWindow(QMainWindow):
         else:
             show_error_dialog('正在归档，请稍后再试')
 
-    def setting_btn_clicked(self):
-        dialogue_window = DialogueWindow(self)
-        if dialogue_window.exec() == QDialog.DialogCode.Accepted:
-            input_text1 = dialogue_window.input_field1.text()
-            input_text2 = dialogue_window.input_field2.text()
-            self.lb_num = int(input_text1)*9
-            self.test_num = int(input_text2)*9
-
     def delete_btn_clicked(self):
         delete_dialogue_window = delete_dialog(self.username,self)
         delete_dialogue_window.exec()
@@ -800,7 +782,7 @@ class MyMainWindow(QMainWindow):
 
     def user_window(self):
         self.user_window = Userwindow(self.user,self)
-        self.user_window.move(1150, 2)
+        self.user_window.move(1300, 2)
         self.user_window.show()
 
         
