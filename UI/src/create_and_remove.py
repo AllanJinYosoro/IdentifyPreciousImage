@@ -39,17 +39,17 @@ def rename_images(folder_path, new_filename_prefix):
             # 重命名文件
             os.rename(original_file, new_file)
 
-def create_and_remove(src_folder,cluster_num,ulb_num,test_num):
+def create_and_remove(src_folder,cluster_num,ulb_num,test_num,user):
     # 定义target_dir目录
-    target_dir = Path('UI/data/rawdata')
-    compress_images(src_folder,'UI/data/compdata/all')
+    target_dir = Path(f'UI/data/{user}/rawdata')
+    compress_images(src_folder,f'UI/data/{user}/compdata/all')
 
-    cluster_result = cluster_N_unique_image('UI/data/compdata/all',cluster_num)# 聚类图片列表
+    cluster_result = cluster_N_unique_image(f'UI/data/{user}/compdata/all',cluster_num)# 聚类图片列表
 
     cluster_result = generate_file_list(src_folder,cluster_result)
 
     #删除'UI/data/compdata/all'
-    shutil.rmtree('UI/data/compdata/all')
+    shutil.rmtree(f'UI/data/{user}/compdata/all')
 
     src_folder = Path(src_folder) 
 
@@ -95,12 +95,12 @@ def create_and_remove(src_folder,cluster_num,ulb_num,test_num):
     for img in random.sample(all_images, test_num):
         shutil.copy(str(img), str(test_dir / img.name))
 
-    rename_images('UI/data/rawdata/lb','lb')
-    rename_images('UI/data/rawdata/ulb','ulb')
-    rename_images('UI/data/rawdata/test','test')
-    compress_images('UI/data/rawdata/lb','UI/data/compdata/lb')
-    compress_images('UI/data/rawdata/ulb','UI/data/compdata/ulb')
-    compress_images('UI/data/rawdata/test','UI/data/compdata/test')
+    rename_images(f'UI/data/{user}/rawdata/lb','lb')
+    rename_images(f'UI/data/{user}/rawdata/ulb','ulb')
+    rename_images(f'UI/data/{user}/rawdata/test','test')
+    compress_images(f'UI/data/{user}/rawdata/lb','UI/data/compdata/lb')
+    compress_images(f'UI/data/{user}/rawdata/ulb','UI/data/compdata/ulb')
+    compress_images(f'UI/data/{user}/rawdata/test','UI/data/compdata/test')
 
     print('completed')
 

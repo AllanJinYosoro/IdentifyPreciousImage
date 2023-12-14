@@ -790,7 +790,7 @@ class MyMainWindow(QMainWindow):
             widget = item.widget()
             widget.deleteLater()
 
-    def show_images(image_paths,self):
+    def show_images(self,image_paths):
         # 获取文件夹中的所有图片文件路径
         image_paths = image_paths
         # 缩放图片的目标大小
@@ -815,7 +815,7 @@ class MyMainWindow(QMainWindow):
     def background_task(self,folder):
         # 后台运行的函数逻辑
         self.manage_btn_available = False
-        create_and_remove(folder,self.lb_num,self.ulb_num,self.test_num)
+        create_and_remove(folder,self.lb_num,self.ulb_num,self.test_num,self.username)
         self.manage_btn_available = True
         
 
