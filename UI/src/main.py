@@ -9,6 +9,7 @@ from global_logger import global_logger
 from create_and_remove import create_and_remove, add_replication_suffix, get_all_file_paths
 from image import * 
 from error_handler import show_error_dialog
+from model_handler import train_model, delete_pictures
 
 import threading
 import subprocess
@@ -232,8 +233,9 @@ class RegisterWindow(QMainWindow):
         elif not username or not password:
             QMessageBox.warning(self, "错误", "用户名或密码不能为空！")
         else:
-            self.user_data[username] = {'username': username, 'password': password, 'parameters': [45,45], 'model': 'Not completed'}
+            self.user_data[username] = {'username': username, 'password': password, 'parameters': [45,45], 'model': 'Not completed', 'photo_dir': ''}
             self.save_user_data()
+            os.mkdir(f'UI/user/models/{username}')
             QMessageBox.information(self, "成功", "注册成功！")
             self.login_window = LoginWindow()  # Create a new LoginWindow
             self.login_window.show()
@@ -265,12 +267,33 @@ class Userwindow(QWidget):
         self.profile_button.setFixedSize(60, 30)
         self.profile_button.move(0, 60)
         self.profile_button.setText('profile')
+        self.profile_button.setStyleSheet('''
+            QPushButton {
+                background-color: white;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #0078D4;
+                color: white;
+            }
+        ''')
+
         self.profile_button.clicked.connect(self.show_profile)
 
         self.sign_out_button = QPushButton(self)
         self.sign_out_button.setFixedSize(60, 30)
         self.sign_out_button.move(0, 90)
         self.sign_out_button.setText('sign out')
+        self.sign_out_button.setStyleSheet('''
+            QPushButton {
+                background-color: white;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #0078D4;
+                color: white;
+            }
+        ''')
         self.sign_out_button.clicked.connect(self.sign_out)
 
     def set_avatar_pixmap(self):
@@ -307,10 +330,17 @@ class ProfileWindow(QMainWindow):
         self.background_label.setPixmap(self.background_image)
         self.background_label.setGeometry(0, 0, self.width(), self.height())
 
+        self.window_label = QLabel(self)
+        self.window_label.setText('Profile')
+        self.window_label.setFont(QFont('Arial', 16))
+        self.window_label.setStyleSheet("color: white;")
+        self.window_label.move(153, 69)
+        self.window_label.setFixedSize(200, 50)
+
         self.back_btn = QPushButton(self)
-        self.back_btn.setFixedSize(40, 40)
+        self.back_btn.setFixedSize(32, 40)
         self.back_btn.setIcon(QIcon('UI/assets/images/back.svg'))
-        self.back_btn.setIconSize(QSize(40, 40))
+        self.back_btn.setIconSize(QSize(32, 40))
         self.back_btn.move(10, 10)
         self.back_btn.clicked.connect(self.back_btn_clicked)
 
@@ -325,7 +355,7 @@ class ProfileWindow(QMainWindow):
 
         self.username_label = QLabel(f'{self.user_name}',self)
         self.username_label.setFont(QFont('Arial', 40))
-        self.username_label.setFixedSize(300, 50)
+        self.username_label.setFixedSize(500, 50)
         self.username_label.move(380, 190)
 
         self.label_number = QLabel(f'Number of labelled pictures: {self.parameters[0]}', self)
@@ -350,14 +380,14 @@ class ProfileWindow(QMainWindow):
 
         # 创建滑块
         self.label_slider = QSlider(Qt.Orientation.Horizontal, self)
-        self.label_slider.setRange(0, 100)
+        self.label_slider.setRange(0, 50)
         self.label_slider.setValue((self.parameters[0]/9))
         self.label_slider.move(800, 360)
         self.label_slider.setFixedSize(320,30)
         self.label_slider.valueChanged.connect(self.LabelValueChanged)
 
         self.test_slider = QSlider(Qt.Orientation.Horizontal, self)
-        self.test_slider.setRange(0, 100)
+        self.test_slider.setRange(0, 50)
         self.test_slider.setValue((self.parameters[1]/9))
         self.test_slider.move(800, 470)
         self.test_slider.setFixedSize(320,30)
@@ -406,65 +436,88 @@ class ProfileWindow(QMainWindow):
 
 #创建一个对话框类
 class delete_dialog(QDialog):
-    def __init__(self,username,parent=None):
+    def __init__(self,username,route,model_exist,mainwindow,parent=None):
         super().__init__(parent)
         
         # 设置对话框的大小
-        self.setMinimumSize(500, 250) 
+        self.setMinimumSize(400, 200) 
         self.username = username
+        self.route = route
+        self.model_exist = model_exist
+        self.mainwindow = mainwindow
 
-        self.renew_button = QPushButton('更新模型')
+        self.renew_button = QPushButton('Renew Model',self)
+        self.renew_button.move(50, 80)
+        self.renew_button.setFixedSize(120, 50)
+        self.renew_button.setFont(QFont('Arial', 14))
+        self.renew_button.setStyleSheet("""
+                QPushButton {
+                    border: none;
+                    border-radius: 4px;
+                    background-color: #0078D4;
+                    color: white;
+                }
+            """)
+
         self.renew_button.clicked.connect(self.update_btn_clicked)
 
-        self.apply_button = QPushButton('应用模型')
-        self.apply_button.clicked.connect(self.apply_btn_clicked)
+        self.apply_button = QPushButton('Apply Model',self)
+        self.apply_button.move(250,80)
+        self.apply_button.setFixedSize(120, 50)
+        self.apply_button.setFont(QFont('Arial', 14))
+        self.apply_button.setStyleSheet("""
+                QPushButton {
+                    border: none;
+                    border-radius: 4px;
+                    background-color: white;
+                    color: black;
+                }
+            """)
 
-        self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.renew_button)
-        self.layout.addWidget(self.apply_button)
+        self.apply_button.clicked.connect(self.apply_btn_clicked)
 
         self.test_path = []
         self.predict_label = []
 
     def update_btn_clicked(self):
+        # 创建后台线程
+        thread = threading.Thread(target=self.train)
+        # 启动后台线程
+        thread.start()
         self.close()
-        self.train()
 
     def apply_btn_clicked(self):
-        self.close()
-        self.delete()
+        if self.model_exist:
+            # 创建后台线程
+            thread = threading.Thread(target=self.delete_pictures)
+            # 启动后台线程
+            thread.start()
+            self.close()
+        else:
+            show_error_dialog('Please train your model first!')
 
 
     def train(self):
-        command = ['python', 'FixMatch/Mytrain.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model']
+        train_model(self.username)
+        self.model_exist = True
+        self.mainwindow.model_exist = True
+        with open('UI/user/user_data.json', 'r') as f:
+                self.data_to_dump = json.load(f)
 
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-
-        if process.returncode != 0:
-            print(f'Error occurred: {stderr.decode()}')
-        else:
-            print(f'Success! Output: {stdout.decode()}')
+        self.data_to_dump[self.username]['model'] = 'Completed'
+        with open('UI/user/user_data.json', 'w') as f:
+            json.dump(self.data_to_dump, f)
     
-    def delete(self):
-        command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/assets/models/{self.username}_model', '--predict_model_path', f'UI/assets/models/{self.username}_model/checkpoint.pth.tar', '--predict_data_path', 'UI/data/compdata/all']
 
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        # 分割子进程的输出
-        outputs = process.stdout.splitlines()
-
-        self.test_path = outputs[0].decode()
-        self.predict_label = outputs[1].decode()
-
-        if process.returncode != 0:
-            print(f'Error occurred: {stderr.decode()}')
-        else:
-            print(f'Success! Output: {stdout.decode()}')
+    def delete_pictures(self):
+        self.prdict_label = delete_pictures(self.username)
+        self.selected_image_paths = [self.route[i] for i, label in enumerate(self.prdict_label) if label == 1]
+        self.mainwindow.selected_image_paths = self.selected_image_paths
+        self.mainwindow.show_images(self.selected_image_paths)
 
 
 #创建一个对话框类
-class CustomMessageBox(QDialog):
+class SelectMessageBox(QDialog):
     def __init__(self,pictures,target_folder,picnum,picture_chosen,parent=None):
         super().__init__(parent)
         
@@ -502,12 +555,14 @@ class CustomMessageBox(QDialog):
                     }
                 QPushButton:pressed {
                     background-color: rgb(100, 100, 100);
-                    border-style: inset;
+                    border-style: outset;
+                    border-radius: 10px;
                     }
                 QPushButton:disabled {
                     background-color: gray;
                     color: lightgray;
                     border-style: outset;
+                    border-radius: 10px;
                     }''')
                 button.setProperty("image_path", self.icons[row * 3 + col])
                 button.clicked.connect(self.button_click)
@@ -528,7 +583,7 @@ class CustomMessageBox(QDialog):
 
         if self.dialog_counter < self.group_num: 
             try:
-                next_dialog = CustomMessageBox(self.pictures,self.target_folder,self.dialog_counter,self.picture_chosen)
+                next_dialog = SelectMessageBox(self.pictures,self.target_folder,self.dialog_counter,self.picture_chosen)
                 next_dialog.dialog_counter = self.dialog_counter + 1
                 next_dialog.exec()
             except Exception as e:
@@ -561,6 +616,13 @@ class MyMainWindow(QMainWindow):
         self.background_label = QLabel(self)
         self.background_label.setPixmap(self.background_image)
         self.background_label.setGeometry(0, 0, self.width(), self.height())  # 设置标签大小与窗口大小一致
+
+        self.window_label = QLabel(self)
+        self.window_label.setText('Photographs')
+        self.window_label.setFont(QFont('Arial', 16))
+        self.window_label.setStyleSheet("color: white;")
+        self.window_label.move(132, 69)
+        self.window_label.setFixedSize(200, 50)
 
         # manage按钮
         self.manage_btn = QPushButton(self)
@@ -620,27 +682,44 @@ class MyMainWindow(QMainWindow):
         # 创建网格布局
         self.grid_layout = QGridLayout(self.container)
 
+
         # 创建文件选择按钮
-        self.select_folder_btn = QPushButton(self)
+        self.select_folder_btn = QPushButton('Import',self)
+        self.select_folder_btn.setFont(QFont('Arial', 16))
         self.select_folder_btn.setFixedSize(96,32)
 
         # 设置按钮的样式表
         self.select_folder_btn.setStyleSheet("""
-            QPushButton {
-                border: none;
-                background-image: url(UI/assets/images/import.svg);
-                background-repeat: no-repeat;
-                background-position: center;
-                padding: 0;
-            }
-        """)
-
+                QPushButton {
+                    border: none;
+                    border-radius: 4px;
+                    color: white;
+                    background-color: #0078D4;
+                }
+            """)
 
         # 连接文件选择按钮的点击事件与选择文件夹的函数
         self.select_folder_btn.clicked.connect(self.select_folder)
 
         self.select_folder_btn.move(1060,60)
         self.scroll_area.move(80,120)
+
+        self.delete_button = QPushButton('Delete',self)
+        self.delete_button.setFixedSize(96, 32)
+        self.delete_button.setFont(QFont('Arial', 16))
+        self.delete_button.setStyleSheet("""
+            QPushButton {
+                    border: 1px solid #0078D4;
+                    border-radius: 4px;
+                    color: black;
+                    background-color: white;
+                }
+            }
+        """)
+
+        self.delete_button.move(1160,60)
+
+        self.delete_button.clicked.connect(self.delete_btn_clicked)
 
         self.user_button = QPushButton(self)
         self.user_button.setFixedSize(40, 40)
@@ -650,25 +729,20 @@ class MyMainWindow(QMainWindow):
         if not os.path.exists(self.avatar_filename):
             self.avatar_filename = "UI/assets/images/noavatar.jpg"
         self.set_avatar_pixmap()
-
-        self.delete_button = QPushButton(self)
-        self.delete_button.setFixedSize(96, 32)
-        self.delete_button.setStyleSheet("""
-            QPushButton {
-                border: none;
-                background-image: url(UI/assets/images/delete.svg);
-                background-repeat: no-repeat;
-                background-position: center;
-                padding: 0;
-            }
-        """)
-
-        self.delete_button.move(1160,60)
-
-        self.delete_button.clicked.connect(self.delete_btn_clicked)
         
         # 定义文件夹路径变量
-        self.folder_path = ""
+        self.folder_path = self.user['photo_dir']
+        if self.folder_path:
+            self.picture_exist = True
+            image_paths = [os.path.join(self.folder_path, file) for file in os.listdir(self.folder_path) if file.endswith(('.png', '.jpg', '.jpeg', '.JPG'))]
+            self.show_images(image_paths)
+        else:
+            self.picture_exist = False
+
+        if self.user['model'] != 'Not completed':
+            self.model_exist = True
+        else:
+            self.model_exist = False
         self.picture_chosen = []
         self.manage_btn_available = False
         self.lb_num = self.user['parameters'][0]
@@ -696,7 +770,18 @@ class MyMainWindow(QMainWindow):
             self.clear_images()
 
             # 显示文件夹中的图片
-            self.show_images()
+            image_paths = [os.path.join(self.folder_path, file) for file in os.listdir(self.folder_path) if file.endswith(('.png', '.jpg', '.jpeg', '.JPG'))]
+            self.show_images(image_paths )
+
+            with open('UI/user/user_data.json', 'r') as f:
+                self.data_to_dump = json.load(f)
+
+            self.user['photo_dir'] = self.folder_path
+            self.data_to_dump[self.username] = self.user
+            with open('UI/user/user_data.json', 'w') as f:
+                json.dump(self.data_to_dump, f)
+
+            self.picture_exist = True
 
     def clear_images(self):
         # 清空网格布局中的图片
@@ -705,10 +790,9 @@ class MyMainWindow(QMainWindow):
             widget = item.widget()
             widget.deleteLater()
 
-    def show_images(self):
+    def show_images(image_paths,self):
         # 获取文件夹中的所有图片文件路径
-        image_paths = [os.path.join(self.folder_path, file) for file in os.listdir(self.folder_path) if file.endswith(('.png', '.jpg', '.jpeg', '.JPG'))]
-
+        image_paths = image_paths
         # 缩放图片的目标大小
         target_size = (220, 150)
 
@@ -736,40 +820,46 @@ class MyMainWindow(QMainWindow):
         
 
     def start_background_task(self,folder):
-            # 创建后台线程
-            thread = threading.Thread(target=self.background_task,args = (folder,))
-            # 启动后台线程
-            thread.start()
+        # 创建后台线程
+        thread = threading.Thread(target=self.background_task,args = (folder,))
+        # 启动后台线程
+        thread.start()
 
     # 定义按钮点击事件的槽函数
     def manage_btn_clicked(self):
-        if self.manage_btn_available:    
-            try:
-                # 创建自定义消息框窗口
-                msg_box = CustomMessageBox(get_all_file_paths('UI/data/rawdata/lb'),'UI/data/compdata/lb',0,[])
-            
-                # 显示消息框并等待用户响应
-                msg_box.exec()
-            except Exception as e:
-                show_error_dialog(str(e))
+        if self.picture_exist:
+            if self.manage_btn_available:    
+                try:
+                    # 创建自定义消息框窗口
+                    msg_box = SelectMessageBox(get_all_file_paths('UI/data/rawdata/lb'),'UI/data/compdata/lb',0,[])
+                
+                    # 显示消息框并等待用户响应
+                    msg_box.exec()
+                except Exception as e:
+                    show_error_dialog(str(e))
+            else:
+                show_error_dialog('Loading data... Please wait a moment.')
         else:
-            show_error_dialog('正在归档，请稍后再试')
+            show_error_dialog('Please import pictures first.')
 
     def test_btn_clicked(self):
-        if self.manage_btn_available:    
-            try:
-                # 创建自定义消息框窗口
-                msg_box = CustomMessageBox(get_all_file_paths('UI/data/rawdata/test'),'UI/data/compdata/test',0,[])
-            
-                # 显示消息框并等待用户响应
-                msg_box.exec()
-            except Exception as e:
-                show_error_dialog(str(e))
+        if self.picture_exist:
+            if self.manage_btn_available:    
+                try:
+                    # 创建自定义消息框窗口
+                    msg_box = SelectMessageBox(get_all_file_paths('UI/data/rawdata/test'),'UI/data/compdata/test',0,[])
+                
+                    # 显示消息框并等待用户响应
+                    msg_box.exec()
+                except Exception as e:
+                    show_error_dialog(str(e))
+            else:
+                show_error_dialog('Loading data... Please wait a moment.')
         else:
-            show_error_dialog('正在归档，请稍后再试')
+            show_error_dialog('Please import pictures first.')
 
     def delete_btn_clicked(self):
-        delete_dialogue_window = delete_dialog(self.username,self)
+        delete_dialogue_window = delete_dialog(self.username,self.folder_path,self.model_exist,self)
         delete_dialogue_window.exec()
         self.test_path = delete_dialogue_window.test_path
         self.predict_label = delete_dialogue_window.predict_label
@@ -786,7 +876,6 @@ class MyMainWindow(QMainWindow):
         self.user_window.show()
 
         
-
 def main():
     # 创建应用程序对象
     app = QApplication([])
