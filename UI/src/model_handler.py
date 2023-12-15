@@ -27,7 +27,7 @@ def delete_pictures(username):
 
     newest_file_path = newest_file_path + '/model_best.pth.tar'
 
-    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', f'UI/data/{username}/compdata/test']
+    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', f'UI/data/{username}/compdata/test', '--user', f'{username}']
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()

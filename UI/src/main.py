@@ -545,11 +545,12 @@ class delete_dialog(QDialog):
         delete_pictures(self.username)
         # 从文件中读取 predict_labels
 
-        with open('predict_labels.txt', 'r') as f:
+        with open(f'UI/data/{self.username}/predict_labels.txt', 'r') as f:
             self.predict_labels = [int(line.strip()) for line in f]
 
         self.selected_image_paths = [self.route[i] for i, label in enumerate(self.predict_label) if label == 0]
         self.mainwindow.selected_image_paths = self.selected_image_paths
+        self.mainwindow.clear_images()
         self.mainwindow.show_images(self.selected_image_paths)
 
 
@@ -902,7 +903,6 @@ class MyMainWindow(QMainWindow):
         delete_dialogue_window = delete_dialog(self.username,self.model_exist,self)
         delete_dialogue_window.exec()
         self.test_path = delete_dialogue_window.test_path
-        self.predict_label = delete_dialogue_window.predict_label
 
     def set_avatar_pixmap(self):
         self.avatar_pixmap = QPixmap(self.avatar_filename)

@@ -279,6 +279,8 @@ if __name__ == '__main__':
                         help = 'Where you store your model to predict')
     parser.add_argument('--predict_data_path',type = str,
                         help = 'Where you store your data to predict')
+    parser.add_argument('--user',type = str, default='allan',
+                        help = 'username')
 
     args = parser.parse_args()
 
@@ -302,6 +304,6 @@ if __name__ == '__main__':
     plot_ConfusionMatrix(predict_labels,real_labels)
 
     # 保存 predict_labels 到文件
-    with open('UI/data/allan/predict_labels.txt', 'w') as f:
+    with open(f'UI/data/{args.user}/predict_labels.txt', 'w') as f:
         for item in predict_labels:
             f.write("%s\n" % item)
