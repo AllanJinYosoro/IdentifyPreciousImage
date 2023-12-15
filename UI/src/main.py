@@ -22,7 +22,7 @@ class LoginWindow(QMainWindow):
         super().__init__()
 
         #设置标题
-        self.setWindowTitle('jxh')
+        self.setWindowTitle('Func')
 
         self.user_data = self.load_user_data()
 
@@ -134,7 +134,7 @@ class RegisterWindow(QMainWindow):
         super().__init__()
 
         #设置标题
-        self.setWindowTitle('jxh')
+        self.setWindowTitle('Func')
 
         self.user_data = self.load_user_data()
 
@@ -642,7 +642,7 @@ class MyMainWindow(QMainWindow):
         super().__init__()
 
         #设置标题
-        self.setWindowTitle('jxh')
+        self.setWindowTitle('Func')
         #设置窗口大小
         self.resize(1440,810)
 
