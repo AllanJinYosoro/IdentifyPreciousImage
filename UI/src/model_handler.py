@@ -27,18 +27,15 @@ def delete_pictures(username):
 
     newest_file_path = newest_file_path + '/model_best.pth.tar'
 
-    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', f'UI/data/{username}/compdata/all']
+    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', f'UI/data/{username}/compdata/test']
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
+    print('complete')
     # 分割子进程的输出
-    outputs = process.stdout.decode('gbk').splitlines()
-
-    predict_label = outputs[1].decode()
 
     if process.returncode != 0:
-        print(f'Error occurred: {stderr.decode()}')
+        print(f'Error occurred: {stderr.decode("gbk")}')
     else:
-        print(f'Success! Output: {stdout.decode()}')
+        print(f'Success! Output: {stdout.decode("gbk")}')
 
-    return predict_label

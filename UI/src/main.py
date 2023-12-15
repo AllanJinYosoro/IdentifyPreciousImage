@@ -468,13 +468,13 @@ class ProfileWindow(QMainWindow):
 
 #创建一个对话框类
 class delete_dialog(QDialog):
-    def __init__(self,username,route,model_exist,mainwindow,parent=None):
+    def __init__(self,username,model_exist,mainwindow,parent=None):
         super().__init__(parent)
         
         # 设置对话框的大小
         self.setMinimumSize(400, 200) 
         self.username = username
-        self.route = route
+        self.route = f'UI/data/{self.username}/rawdata/test'
         self.model_exist = model_exist
         self.mainwindow = mainwindow
 
@@ -542,10 +542,16 @@ class delete_dialog(QDialog):
     
 
     def delete_pictures(self):
-        self.prdict_label = delete_pictures(self.username)
-        self.selected_image_paths = [self.route[i] for i, label in enumerate(self.prdict_label) if label == 1]
+        delete_pictures(self.username)
+        # 从文件中读取 predict_labels
+
+        with open('predict_labels.txt', 'r') as f:
+            self.predict_labels = [int(line.strip()) for line in f]
+
+        self.selected_image_paths = [self.route[i] for i, label in enumerate(self.predict_label) if label == 0]
         self.mainwindow.selected_image_paths = self.selected_image_paths
         self.mainwindow.show_images(self.selected_image_paths)
+
 
 
 #创建一个对话框类
@@ -893,7 +899,7 @@ class MyMainWindow(QMainWindow):
             show_error_dialog('Please import pictures first.')
 
     def delete_btn_clicked(self):
-        delete_dialogue_window = delete_dialog(self.username,self.folder_path,self.model_exist,self)
+        delete_dialogue_window = delete_dialog(self.username,self.model_exist,self)
         delete_dialogue_window.exec()
         self.test_path = delete_dialogue_window.test_path
         self.predict_label = delete_dialogue_window.predict_label

@@ -300,5 +300,8 @@ if __name__ == '__main__':
 
     plot_roc(predict_labels,real_labels)
     plot_ConfusionMatrix(predict_labels,real_labels)
-    print(test_pathes)
-    print(predict_labels)
+
+    # 保存 predict_labels 到文件
+    with open('UI/data/allan/predict_labels.txt', 'w') as f:
+        for item in predict_labels:
+            f.write("%s\n" % item)
