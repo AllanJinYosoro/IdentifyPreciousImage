@@ -1,3 +1,2 @@
-beta v0.6
-update：
-增加了setting
+v2.0
+操作详见程序提示
