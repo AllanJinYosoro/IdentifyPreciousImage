@@ -142,7 +142,7 @@ def main():
                         help="For distributed training: local_rank")
     parser.add_argument('--no-progress', action='store_true',
                         help="don't use progress bar")
-    parser.add_argument('--user', default='test', type=str,
+    parser.add_argument('--user', default='allan', type=str,
                         help="username")
 
     args = parser.parse_args()

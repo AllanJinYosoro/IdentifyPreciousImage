@@ -4,15 +4,15 @@ import os
 
 def train_model(username):
     timetik = time.time()
-    command = ['python', 'FixMatch/Mytrain.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/{timetik}_model']
+    command = ['python', 'FixMatch/Mytrain.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/{timetik}_model','--user',f'{username}']
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
     if process.returncode != 0:
-        print(f'Error occurred: {stderr.decode()}')
+        print(f"Error occurred: {stderr.decode('gbk')}")
     else:
-        print(f'Success! Output: {stdout.decode()}')
+        print(f"Success! Output: {stdout.decode('gbk')}")
 
 def delete_pictures(username):
     folder_path = f'UI/user/models/{username}'
@@ -25,18 +25,17 @@ def delete_pictures(username):
     # 获取时间最新的文件路径
     newest_file_path = file_paths[0] if file_paths else None
 
-    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', f'UI/data/{username}/compdata/all']
+    newest_file_path = newest_file_path + '/model_best.pth.tar'
+
+    command = ['python', 'FixMatch/Mypredict.py', '--num-workers', '4', '--dataset', 'PhotoGraph', '--batch-size', '9', '--num-labeled', '45', '--eval-step', '1024', '--total-steps', '204800', '--arch', 'wideresnet', '--lr', '0.03', '--expand-labels', '--seed', '5', '--out', f'UI/user/models/{username}/model_result', '--predict_model_path', newest_file_path, '--predict_data_path', f'UI/data/{username}/compdata/test', '--user', f'{username}']
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
+    print('complete')
     # 分割子进程的输出
-    outputs = process.stdout.splitlines()
-
-    predict_label = outputs[1].decode()
 
     if process.returncode != 0:
-        print(f'Error occurred: {stderr.decode()}')
+        print(f'Error occurred: {stderr.decode("gbk")}')
     else:
-        print(f'Success! Output: {stdout.decode()}')
+        print(f'Success! Output: {stdout.decode("gbk")}')
 
-    return predict_label
