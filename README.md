@@ -4,8 +4,6 @@
 
 ​	基于K-means图像聚类和FixMatch半监督学习,通过用户少量选择照片偏好,训练出定制模型,以预测用户要删除的手机相册照片。
 
-​	本项目为[GitHub开源项目](https://github.com/AllanJinYosoro/IdentifyPreciousImage)（我们会在删除个人敏感数据后公开代码仓库）
-
 ## 代码运行示范
 
 1. 从`requirment.txt`中安装依赖库
@@ -113,9 +111,9 @@ $$
 
 ​	这三个模型分别基于我们小组三位同学的手机照片数据训练。其中J删除照片习惯极为稳定，手机内各类照片来源也较为稳定；F删除照片习惯波动较多，手机内各类照片的来源也随时间的不同而有较大差异；C则是平日就有删除整理照片的习惯，导致训练数据中绝大多数都是保留数据，训练数据极其不平衡。
 ​	从中可以看出，本模型假设训练目标（用户删除照片的习惯）是稳定的、不变的，即可以通过训练数据学习到与测试数据相同的删除照片的模式：
-$$
-\mathop{\min}_{f\in F}\hat{R}_S(f)=\mathop{\min}_{f\in F}\frac{1}{m}\mathop{\sum}^m_{i=1}L(f(\mathbf{x}_i),y_i)
-$$
+
+![equation](https://latex.codecogs.com/svg.latex?\mathop{\min}_{f\in F}\hat{R}_S(f)=\mathop{\min}_{f\in F}\frac{1}{m}\mathop{\sum}^m_{i=1}L(f(\mathbf{x}_i),y_i))
+
 ​	但在部分用户情况下，这个假设可能失效。或者由于部分用户已然删除垃圾图片，导致训练数据不平衡、信息量丢失。
 
 ## 模型创新性与拓展
